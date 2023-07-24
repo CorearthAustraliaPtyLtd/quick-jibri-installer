@@ -117,9 +117,6 @@ else
     apt-get update -q2
 fi
 }
-=======
-
->>>>>>> 42703a0 (jra_nextcloud.sh: fix add gpgp key function and add install available version pacjage)
 while [[ "$ANS_NCD" != "yes" ]]
 do
   read -p "> Please set your domain (or subdomain) here for Nextcloud: (e.g.: cloud.domain.com)$NL" -r NC_DOMAIN
@@ -213,7 +210,6 @@ exit_ifinstalled postgresql-"$PSGVER"
 install_ifnot postgresql-"$PSGVER"
 
 # PHP 7.4 / 8.1
-
 add_php
 install_aval_package " \
             imagemagick \
