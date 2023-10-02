@@ -16,8 +16,19 @@ done
 
 #DEBUG
 if [ "$MODE" = "debug" ]; then
-set -x
+    set -x
 fi
+
+# Reset
+Color_Off='\e[0m'       # Text Reset
+# Regular Colors
+Black='\e[0;30m'        # Black
+Red='\e[0;31m'          # Red
+Green='\e[0;32m'        # Green
+Yellow='\e[0;33m'       # Yellow
+Blue='\e[0;34m'         # Blue
+Purple='\e[0;35m'       # Purple
+Cyan='\e[0;36m'         # Cyan
 
 # SYSTEM SETUP
 JITSI_REPO=$(apt-cache policy | awk '/jitsi/&&/stable/{print$3}' | awk -F / 'NR==1{print$1}')
@@ -29,7 +40,11 @@ GOOGLE_ACTIVE_REPO=$(apt-cache policy | awk '/chrome/{print$3}' | awk -F "/" 'NR
 PROSODY_REPO="$(apt-cache policy | awk '/prosody/{print$3}' | awk -F "/" 'NR==1{print$2}')"
 PUBLIC_IP="$(dig +short myip.opendns.com @resolver1.opendns.com)"
 NL="$(printf '\n  ')"
+NODEJS_VER="18"
 
+printwc() {
+    printf "%b$2%b" "$1" "${Color_Off}"
+}
 exit_ifinstalled() {
 if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
     echo "
@@ -122,6 +137,11 @@ while [ $secs -gt 0 ]; do
    sleep 1
    : $((secs--))
 done
+}
+print_title() {
+printwc "${Blue}" "\n#--------------------------------------------------"
+printwc "${Blue}" "\n# $1"
+printwc "${Blue}" "\n#--------------------------------------------------\n"
 }
 clear
 printf '
@@ -383,16 +403,19 @@ apt-get -y install \
 #https://github.com/openssl/openssl/issues/7754#issuecomment-444063355
 sed -i "/RANDFILE/d" /etc/ssl/openssl.cnf
 
-echo "
 #--------------------------------------------------
-# Install NodeJS
+print_title "Install NodeJS $NODEJS_VER.x"
 #--------------------------------------------------
-"
 if [ "$(dpkg-query -W -f='${Status}' nodejs 2>/dev/null | grep -c "ok")" == "1" ]; then
     echo "Nodejs is installed, skipping..."
 else
-    curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    mkdir -p /etc/apt/keyrings
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODEJS_VER.x nodistro main" | \
+    tee /etc/apt/sources.list.d/nodesource.list
+    apt-get update -yq2
     apt-get install -yq2 nodejs
+
     echo "Installing nodejs esprima package..."
     npm install -g esprima
 fi
