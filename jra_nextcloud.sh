@@ -25,7 +25,7 @@ exit_if_not_installed() {
 if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" != "1" ]; then
     echo " This instance doesn't have $1 installed, exiting..."
     echo " If you think this is an error, please report to:
-    -> https://github.com/switnet-ltd/quick-jibri-installer/issues "
+    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues "
     exit
 fi
 }
@@ -93,7 +93,7 @@ exit_ifinstalled() {
 if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
     echo " This instance already has $1 installed, exiting..."
     echo " If you think this is an error, please report to:
-    -> https://github.com/switnet-ltd/quick-jibri-installer/issues "
+    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues "
     exit
 fi
 }

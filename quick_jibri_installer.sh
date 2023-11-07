@@ -51,7 +51,7 @@ if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")"
 This instance already has $1 installed, exiting...
 Please try again on a clean system.
  If you think this is an error, please report to:
-  -> https://github.com/switnet-ltd/quick-jibri-installer/issues"
+  -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
     exit
 fi
 }
@@ -158,8 +158,8 @@ Featuring:
 - Recurring changes updater
 
 Learn more about these at,
-Main repository: https://github.com/switnet-ltd/quick-jibri-installer
-Wiki and documentation: https://github.com/switnet-ltd/quick-jibri-installer/wiki\n'
+Main repository: https://forge.switnet.net/switnet/quick-jibri-installer
+Wiki and documentation: https://forge.switnet.net/switnet/quick-jibri-installer/wiki\n'
 
 read -n 1 -s -r -p "Press any key to continue..."$'\n'
 
@@ -242,7 +242,7 @@ If you plan to enable other components such as,
  - Additional Jibri Nodes
  - others.
 
->>> We higly recommend to increase resources of this server. <<<
+>>> We highly recommend to increase resources of this server. <<<
 
 For now we advice to disable the Jibri service locally and add an external
 Jibri node once this installation has finished, using our script:
@@ -364,7 +364,7 @@ apt-get -y install \
                 certbot
     if [ "$(dpkg-query -W -f='${Status}' ufw 2>/dev/null | grep -c "ok installed")" == "1"  ]; then
         echo "# Disable pre-installed ufw, more on firewall see:
-    > https://github.com/switnet-ltd/quick-jibri-installer/wiki/Firewall"
+    > https://forge.switnet.net/switnet/quick-jibri-installer/wiki/Firewall"
         ufw disable
     fi
 fi
@@ -648,7 +648,7 @@ fi
 while [ "$ENABLE_NC_ACCESS" != "yes" ] && [ "$ENABLE_NC_ACCESS" != "no" ]
 do
     read -p "> Do you want to setup Jibri Records Access via Nextcloud: (yes or no)
-( Please check requirements at: https://github.com/switnet-ltd/quick-jibri-installer )$NL" -r ENABLE_NC_ACCESS
+( Please check requirements at: https://forge.switnet.net/switnet/quick-jibri-installer )$NL" -r ENABLE_NC_ACCESS
     if [ "$ENABLE_NC_ACCESS" = "no" ]; then
         printf " - JRA via Nextcloud won't be enabled.\n\n"
     elif [ "$ENABLE_NC_ACCESS" = "yes" ]; then
@@ -664,7 +664,7 @@ elif [ "$(curl -s -o /dev/null -w "%{http_code}" "$GC_SDK_REL_FILE" )" == "200" 
     while [ "$ENABLE_TRANSCRIPT" != "yes" ] && [ "$ENABLE_TRANSCRIPT" != "no" ]
     do
         read -p "> Do you want to setup Jigasi Transcription: (yes or no)
-( Please check requirements at: https://github.com/switnet-ltd/quick-jibri-installer )$NL" -r ENABLE_TRANSCRIPT
+( Please check requirements at: https://forge.switnet.net/switnet/quick-jibri-installer )$NL" -r ENABLE_TRANSCRIPT
         if [ "$ENABLE_TRANSCRIPT" = "no" ]; then
             printf " - Jigasi Transcription won't be enabled.\n\n"
         elif [ "$ENABLE_TRANSCRIPT" = "yes" ]; then
@@ -673,14 +673,14 @@ elif [ "$(curl -s -o /dev/null -w "%{http_code}" "$GC_SDK_REL_FILE" )" == "200" 
     done
 else
     echo "No valid option for Jigasi. Please report this to
-https://github.com/switnet-ltd/quick-jibri-installer/issues"
+https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 sleep .1
 #Grafana
 while [ "$ENABLE_GRAFANA_DSH" != "yes" ] && [ "$ENABLE_GRAFANA_DSH" != "no" ]
 do
 read -p "> Do you want to setup Grafana Dashboard: (yes or no)
-( Please check requirements at: https://github.com/switnet-ltd/quick-jibri-installer )$NL" -r ENABLE_GRAFANA_DSH
+( Please check requirements at: https://forge.switnet.net/switnet/quick-jibri-installer )$NL" -r ENABLE_GRAFANA_DSH
 if [ "$ENABLE_GRAFANA_DSH" = "no" ]; then
     printf " - Grafana Dashboard won't be enabled.\n\n"
 elif [ "$ENABLE_GRAFANA_DSH" = "yes" ]; then
@@ -712,7 +712,7 @@ INT_CONF_ETC="/etc/jitsi/meet/$DOMAIN-interface_config.js"
 ssl_wa() {
 if [ "$LE_SSL" = "yes" ]; then
   systemctl stop "$1"
-  certbot certonly --standalone --renew-by-default --agree-tos --email "$5" -d "$6"
+  certbot certonly --standalone --renew-by-default --agree-tos --email "$5" -d "$6" --non-interactive
   sed -i "s|/etc/jitsi/meet/$3.crt|/etc/letsencrypt/live/$3/fullchain.pem|" "$4"
   sed -i "s|/etc/jitsi/meet/$3.key|/etc/letsencrypt/live/$3/privkey.pem|" "$4"
   systemctl restart "$1"
@@ -1047,7 +1047,7 @@ if [ -f "$WS_CONF" ]; then
     systemctl reload nginx
 else
     echo "No app configuration done to server file, please report to:
-    -> https://github.com/switnet-ltd/quick-jibri-installer/issues"
+    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 #Static avatar
 if [ "$ENABLE_SA" = "yes" ] && [ -f "$WS_CONF" ]; then
@@ -1067,7 +1067,7 @@ elif [ "$DROP_TLS1" = "no" ];then
     printf "\nNo TLSv1/1.1 dropping was done.\n\n"
 else
     echo "No condition meet, please report to
-https://github.com/switnet-ltd/quick-jibri-installer/issues "
+https://forge.switnet.net/switnet/quick-jibri-installer/issues "
 fi
 sleep .1
 #================== Setup prosody conf file =================
@@ -1174,7 +1174,7 @@ else
     echo -e "\nWatch out!, there seems to be an issue on $MEET_CONF line:
 $CHECKJS
 Most of the times this is due upstream changes, please report to
-https://github.com/switnet-ltd/quick-jibri-installer/issues\n"
+https://forge.switnet.net/switnet/quick-jibri-installer/issues\n"
 fi
 
 #Enable jibri services
@@ -1227,7 +1227,7 @@ if [ -f "$WS_CONF" ]; then
     systemctl reload nginx
 else
     echo "No interface_config.js configuration done to server file, please report to:
-    -> https://github.com/switnet-ltd/quick-jibri-installer/issues"
+    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 #JRA via Nextcloud
 if [ "$ENABLE_NC_ACCESS" = "yes" ]; then

@@ -167,7 +167,7 @@ if [ -f "$WS_CONF" ]; then
     systemctl restart nginx
 else
     echo "No app configuration done to server file, please report to:
-    -> https://github.com/switnet-ltd/quick-jibri-installer/issues"
+    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 
 echo "
