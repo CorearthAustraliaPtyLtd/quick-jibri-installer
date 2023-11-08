@@ -47,9 +47,9 @@ EXCAL_PORT_FILE="src/index.ts"
 # Test for matches
 test_match() {
 if grep -q "$1" "$2" ; then
-    echo "It is possible to setup "$(basename $2)", continuing..."
+    echo "It is possible to setup $(basename "$2"), continuing..."
 else
-    echo "It is not possible to setup "$(basename $2)", stopping here."
+    echo "It is not possible to setup $(basename "$2"), stopping here."
     echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
     exit
 fi
@@ -110,8 +110,8 @@ else
     sed -i "/$PROS_MATCH3/i \\\n" "$PROSODY_FILE"
 fi
 
-echo "Checking for "$(basename $MEET_CONF)" setup."
-if [ -z "$(sed -n '/whiteboard: {/,/},/p' $MEET_CONF)" ]; then
+echo "Checking for $(basename "$MEET_CONF") setup."
+if [ -z "$(sed -n '/whiteboard: {/,/},/p' "$MEET_CONF")" ]; then
     echo "No present configuration on current config.js file"
     sed -i "/$CONFIG_MATCH1/i \\\n" "$MEET_CONF"
     sed -i "/$CONFIG_MATCH1/i \ \ \ \ whiteboard: {" "$MEET_CONF"
