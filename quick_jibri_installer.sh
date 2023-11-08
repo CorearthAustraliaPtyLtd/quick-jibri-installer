@@ -498,12 +498,12 @@ LE_RENEW_LOG="/var/log/letsencrypt/renew.log"
 MOD_LISTU="https://prosody.im/files/mod_listusers.lua"
 MOD_LIST_FILE="/usr/lib/prosody/modules/mod_listusers.lua"
 ENABLE_SA="yes"
-GC_SDK_REL_FILE="http://packages.cloud.google.com/apt/dists/cloud-sdk-$(lsb_release -sc)/Release"
 MJS_RAND_TAIL="$(tr -dc "a-zA-Z0-9" < /dev/urandom | fold -w 4 | head -n1)"
 MJS_USER="jbsync_$MJS_RAND_TAIL"
 MJS_USER_PASS="$(tr -dc "a-zA-Z0-9#_*=" < /dev/urandom | fold -w 32 | head -n1)"
 FQDN_HOST="fqdn"
 JIBRI_XORG_CONF="/etc/jitsi/jibri/xorg-video-dummy.conf"
+#GC_SDK_REL_FILE="http://packages.cloud.google.com/apt/dists/cloud-sdk-$(lsb_release -sc)/Release"
 
 # Rename hostname for jitsi server
 while [ "$FQDN_HOST" != "yes" ] && [ "$FQDN_HOST" != "no" ] && [ -n "$FQDN_HOST" ]
@@ -656,25 +656,25 @@ do
     fi
 done
 sleep .1
-#Jigasi
-if [ "$(curl -s -o /dev/null -w "%{http_code}" "$GC_SDK_REL_FILE" )" == "404" ]; then
-    printf "> Sorry Google SDK doesn't have support yet for %s,
-    thus, Jigasi Transcript can't be enable.\n\n" "$(lsb_release -sd)"
-elif [ "$(curl -s -o /dev/null -w "%{http_code}" "$GC_SDK_REL_FILE" )" == "200" ]; then
-    while [ "$ENABLE_TRANSCRIPT" != "yes" ] && [ "$ENABLE_TRANSCRIPT" != "no" ]
-    do
-        read -p "> Do you want to setup Jigasi Transcription: (yes or no)
-( Please check requirements at: https://forge.switnet.net/switnet/quick-jibri-installer )$NL" -r ENABLE_TRANSCRIPT
-        if [ "$ENABLE_TRANSCRIPT" = "no" ]; then
-            printf " - Jigasi Transcription won't be enabled.\n\n"
-        elif [ "$ENABLE_TRANSCRIPT" = "yes" ]; then
-            printf " - Jigasi Transcription will be enabled.\n\n"
-        fi
-    done
-else
-    echo "No valid option for Jigasi. Please report this to
-https://forge.switnet.net/switnet/quick-jibri-installer/issues"
-fi
+##Jigasi
+#if [ "$(curl -s -o /dev/null -w "%{http_code}" "$GC_SDK_REL_FILE" )" == "404" ]; then
+    #printf "> Sorry Google SDK doesn't have support yet for %s,
+    #thus, Jigasi Transcript can't be enable.\n\n" "$(lsb_release -sd)"
+#elif [ "$(curl -s -o /dev/null -w "%{http_code}" "$GC_SDK_REL_FILE" )" == "200" ]; then
+    #while [ "$ENABLE_TRANSCRIPT" != "yes" ] && [ "$ENABLE_TRANSCRIPT" != "no" ]
+    #do
+        #read -p "> Do you want to setup Jigasi Transcription: (yes or no)
+#( Please check requirements at: https://forge.switnet.net/switnet/quick-jibri-installer )$NL" -r ENABLE_TRANSCRIPT
+        #if [ "$ENABLE_TRANSCRIPT" = "no" ]; then
+            #printf " - Jigasi Transcription won't be enabled.\n\n"
+        #elif [ "$ENABLE_TRANSCRIPT" = "yes" ]; then
+            #printf " - Jigasi Transcription will be enabled.\n\n"
+        #fi
+    #done
+#else
+    #echo "No valid option for Jigasi. Please report this to
+#https://forge.switnet.net/switnet/quick-jibri-installer/issues"
+#fi
 sleep .1
 #Grafana
 while [ "$ENABLE_GRAFANA_DSH" != "yes" ] && [ "$ENABLE_GRAFANA_DSH" != "no" ]
@@ -696,6 +696,17 @@ if [ "$ENABLE_DOCKERPAD" = "no" ]; then
     printf " - Docker Etherpad won't be enabled.\n"
 elif [ "$ENABLE_DOCKERPAD" = "yes" ]; then
     printf " - Docker Etherpad will be enabled.\n"
+fi
+done
+sleep .1
+#Excalidraw Whiteboard
+while [ "$ENABLE_WHITEBOARD" != "yes" ] && [ "$ENABLE_WHITEBOARD" != "no" ]
+do
+read -p "> Do you want to setup Excalidraw Whiteboard backend: (yes or no)$NL" -r ENABLE_WHITEBOARD
+if [ "$ENABLE_WHITEBOARD" = "no" ]; then
+    printf " - Excalidraw Whiteboard won't be enabled.\n"
+elif [ "$ENABLE_WHITEBOARD" = "yes" ]; then
+    printf " - Excalidraw Whiteboard will be enabled.\n"
 fi
 done
 sleep .1
@@ -1257,6 +1268,16 @@ if [ "$ENABLE_DOCKERPAD" = "yes" ]; then
         bash "$PWD"/etherpad-docker.sh -m debug
     else
         bash "$PWD"/etherpad-docker.sh
+    fi
+fi
+sleep .1
+#Excalidraw Whiteboard
+if [ "$ENABLE_WHITEBOARD" = "yes" ]; then
+    printf "\nExcalidraw Whiteboard will be enabled."
+    if [ "$MODE" = "debug" ]; then
+        bash "$PWD"/excalidraw-backend.sh -m debug
+    else
+        bash "$PWD"/excalidraw-backend.sh
     fi
 fi
 sleep .1
