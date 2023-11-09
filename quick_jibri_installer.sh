@@ -144,7 +144,7 @@ printwc "${Blue}" "\n# $1"
 printwc "${Blue}" "\n#--------------------------------------------------\n"
 }
 clear
-printf '
+printfwc "${Green}" '
 ########################################################################
                     Welcome to Jitsi/Jibri Installer
 ########################################################################
@@ -153,9 +153,11 @@ printf '
 Featuring:
 - Jibri Recording and YouTube Streaming
 - Jibri Recordings Access via Nextcloud
-- Jigasi Transcription (Advanced)
+- Grafana Statistics
+- Etherpad
+- Whiteboard
 - Customized brandless mode
-- Recurring changes updater
+- Recurring updater
 
 Learn more about these at,
 Main repository: https://forge.switnet.net/switnet/quick-jibri-installer
@@ -238,8 +240,10 @@ echo 'This server will likely have issues due the lack of resources.
 If you plan to enable other components such as,
 
  - JRA via Nextcloud
- - Jigasi Transcriber
- - Additional Jibri Nodes
+ - Grafana
+ - Etherpad
+ - Whiteboards
+ - additional Jibri Nodes
  - others.
 
 >>> We highly recommend to increase resources of this server. <<<
