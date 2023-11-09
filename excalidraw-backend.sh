@@ -41,7 +41,7 @@ CONFIG_MATCH1='Settings for the GIPHY integration'
 EXCALIDRAW_HOME="/opt/excalidraw"
 EXCAL_MATCH1="prometheus.metrics(io"
 EXCAL_NEW_PORT="9091"
-EXCAL_PORT_FILE="src/index.ts"
+EXCAL_PORT_FILE="$EXCALIDRAW_HOME/backend/src/index.ts"
 
 
 # Test for matches
@@ -61,10 +61,10 @@ test_match "$PROS_MATCH2" "$PROSODY_FILE"
 test_match "$PROS_MATCH3" "$PROSODY_FILE"
 test_match "$PROS_MATCH3" "$PROSODY_FILE"
 test_match "$CONFIG_MATCH1" "$MEET_CONF"
-test_match "$EXCAL_MATCH1" "$EXCAL_PORT_FILE"
 
 adduser --home "$EXCALIDRAW_HOME" --disabled-password --gecos "" excalidraw
 git clone https://github.com/jitsi/excalidraw-backend "$EXCALIDRAW_HOME/backend"
+test_match "$EXCAL_MATCH1" "$EXCAL_PORT_FILE"
 
 chown -R excalidraw:excalidraw "$EXCALIDRAW_HOME"
 cd "$EXCALIDRAW_HOME/backend"
