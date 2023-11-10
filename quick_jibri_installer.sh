@@ -62,10 +62,9 @@ if [ "$DIST" = "$1" ]; then
   DIST="$2"
 fi
 }
-#Trisquel distro renaming
-rename_distro flidas xenial
-rename_distro etiona bionic
+#Trisquel distro upstream referencing.
 rename_distro nabia  focal
+rename_distro aramo  jammy
 
 install_ifnot() {
 if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
@@ -143,6 +142,15 @@ printwc "${Blue}" "\n#--------------------------------------------------"
 printwc "${Blue}" "\n# $1"
 printwc "${Blue}" "\n#--------------------------------------------------\n"
 }
+test_match() {
+if grep -q "$1" "$2" ; then
+    echo "$(basename "$2") - OK..."
+else
+    echo "$(basename "$2"), FAIL..."
+    echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
+    exit
+fi
+}
 clear
 printwc "${Green}" '
 ########################################################################
@@ -161,7 +169,7 @@ Featuring:
 
 Learn more about these at,
 Main repository: https://forge.switnet.net/switnet/quick-jibri-installer
-Wiki and documentation: https://forge.switnet.net/switnet/quick-jibri-installer/wiki\n'
+Wiki and documentation: https://forge.switnet.net/switnet/quick-jibri-installer/wiki\n\n'
 
 read -n 1 -s -r -p "Press any key to continue..."$'\n'
 
@@ -507,7 +515,14 @@ MJS_USER="jbsync_$MJS_RAND_TAIL"
 MJS_USER_PASS="$(tr -dc "a-zA-Z0-9#_*=" < /dev/urandom | fold -w 32 | head -n1)"
 FQDN_HOST="fqdn"
 JIBRI_XORG_CONF="/etc/jitsi/jibri/xorg-video-dummy.conf"
+WS_MATCH1="# ensure all static content can always be found first"
+MEET_MATCH1="disable simulcast support."
 #GC_SDK_REL_FILE="http://packages.cloud.google.com/apt/dists/cloud-sdk-$(lsb_release -sc)/Release"
+
+# Make sure we can rely on the match strings.
+printf "> Testing match strings on config files.\n"
+test_match "$WS_MATCH1" "$WS_CONF"
+test_match "$MEET_MATCH1" "$MEET_CONF"
 
 # Rename hostname for jitsi server
 while [ "$FQDN_HOST" != "yes" ] && [ "$FQDN_HOST" != "no" ] && [ -n "$FQDN_HOST" ]
@@ -697,9 +712,9 @@ while [ "$ENABLE_DOCKERPAD" != "yes" ] && [ "$ENABLE_DOCKERPAD" != "no" ]
 do
 read -p "> Do you want to setup Docker Etherpad: (yes or no)$NL" -r ENABLE_DOCKERPAD
 if [ "$ENABLE_DOCKERPAD" = "no" ]; then
-    printf " - Docker Etherpad won't be enabled.\n"
+    printf " - Docker Etherpad won't be enabled.\n\n"
 elif [ "$ENABLE_DOCKERPAD" = "yes" ]; then
-    printf " - Docker Etherpad will be enabled.\n"
+    printf " - Docker Etherpad will be enabled.\n\n"
 fi
 done
 sleep .1
@@ -708,9 +723,9 @@ while [ "$ENABLE_WHITEBOARD" != "yes" ] && [ "$ENABLE_WHITEBOARD" != "no" ]
 do
 read -p "> Do you want to setup Excalidraw Whiteboard backend: (yes or no)$NL" -r ENABLE_WHITEBOARD
 if [ "$ENABLE_WHITEBOARD" = "no" ]; then
-    printf " - Excalidraw Whiteboard won't be enabled.\n"
+    printf " - Excalidraw Whiteboard won't be enabled.\n\n"
 elif [ "$ENABLE_WHITEBOARD" = "yes" ]; then
-    printf " - Excalidraw Whiteboard will be enabled.\n"
+    printf " - Excalidraw Whiteboard will be enabled.\n\n"
 fi
 done
 sleep .1
@@ -761,7 +776,7 @@ restart_services() {
 }
 
 # Configure Jvb2
-sed -i "/shard.HOSTNAME/s|localhost|$DOMAIN|" /etc/jitsi/videobridge/sip-communicator.properties
+sed -i "/shard.HOSTNAME/s|localhost|$DOMAIN|" "$JVB2_SIP"
 
 # Configure Jibri
 if [ "$ENABLE_SC" = "yes" ]; then
@@ -769,9 +784,11 @@ if [ "$ENABLE_SC" = "yes" ]; then
   printf "\n-> Adding external module to list prosody users...\n"
   curl -s "$MOD_LISTU" > "$MOD_LIST_FILE"
 
-  printf "Now you can check registered users with:\nprosodyctl mod_listusers\n"
+  printf "Now you can check registered users with:"
+  printf " \n  prosodyctl mod_listusers\n"
     else
-  printf "Prosody support for listing users seems to be enabled. \ncheck with: prosodyctl mod_listusers\n"
+  printf "Prosody support for listing users seems to be enabled.check with:"
+  printf " \n  prosodyctl mod_listusers\n"
   fi
 
 fi
@@ -1054,11 +1071,11 @@ sed -i "s|MJS_USER_PASS=.*|MJS_USER_PASS=\"$MJS_USER_PASS\"|" add-jvb2-node.sh
 
 #Tune webserver for Jitsi App control
 if [ -f "$WS_CONF" ]; then
-    sed -i "/# ensure all static content can always be found first/i \\\n" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ location = \/external_api.min.js {" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ \ \ \ \ alias \/usr\/share\/jitsi-meet\/libs\/external_api.min.js;" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ }" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \\\n" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ location = \/external_api.min.js {" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ \ \ alias \/usr\/share\/jitsi-meet\/libs\/external_api.min.js;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ }" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
     systemctl reload nginx
 else
     echo "No app configuration done to server file, please report to:
@@ -1161,24 +1178,24 @@ fi
 sed -i "s|// prejoinPageEnabled:.*|prejoinPageEnabled: true,|" "$MEET_CONF"
 
 #Set HD resolution and widescreen format
-sed -i "/Enable \/ disable simulcast support/i \/\/ Start QJI - Set resolution and widescreen format" "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ resolution: 720," "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ constraints: {" "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ aspectRatio: 16 \/ 9," "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ video: {" "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ \ \ \ \ height: {" "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ideal: 720," "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ max: 720," "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ min: 180" "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ \ \ \ \ }," "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ \ \ \ \ width: {" "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ideal: 1280," "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ max: 1280," "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ min: 320" "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ \ \ \ \ }" "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ \ \ \ \ }" "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \ \ \ \ \ }," "$MEET_CONF"
-sed -i "/Enable \/ disable simulcast support/i \/\/ End QJI" "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \/\/ Start QJI - Set resolution and widescreen format" "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ resolution: 720," "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ constraints: {" "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ aspectRatio: 16 \/ 9," "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ video: {" "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ \ \ \ \ height: {" "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ideal: 720," "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ max: 720," "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ min: 180" "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ \ \ \ \ }," "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ \ \ \ \ width: {" "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ideal: 1280," "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ max: 1280," "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ min: 320" "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ \ \ \ \ }" "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ \ \ \ \ }" "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \ \ \ \ \ }," "$MEET_CONF"
+sed -i "/$MEET_MATCH1/i \/\/ End QJI" "$MEET_CONF"
 
 #Check config file
 printf "\n# Checking %s file for errors\n" "$MEET_CONF"
