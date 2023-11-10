@@ -1,5 +1,10 @@
 #!/bin/bash
 # Excalidraw Jitsi Backend Installer
+#
+# Based on:
+# - https://community.jitsi.org/t/118883
+# by Dirk Materlik
+#
 # SwITNet Ltd © - 2023, https://switnet.net/
 # GPLv3 or later.
 
@@ -138,7 +143,7 @@ else
     sed -i "/$PROS_MATCH3/i \\\n" "$PROSODY_FILE"
 fi
 
-echo "Checking for whitebord setup at $(basename "$MEET_CONF")."
+printf "\n# Checking for whitebord setup at $(basename "$MEET_CONF").\n"
 if [ -z "$(sed -n '/whiteboard: {/,/},/p' "$MEET_CONF")" ]; then
     echo "> No present configuration on current config.js file"
     sed -i "/$CONFIG_MATCH1/i \\\n" "$MEET_CONF"

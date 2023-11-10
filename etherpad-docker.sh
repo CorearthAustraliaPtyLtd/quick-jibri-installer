@@ -1,6 +1,6 @@
 #!/bin/bash
 # Etherpad Installer for Jitsi Meet
-# SwITNet Ltd  Â© - 2020, https://switnet.net/
+# SwITNet Ltd © - 2023, https://switnet.net/
 #
 # GPLv3 or later.
 
