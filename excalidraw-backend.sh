@@ -3,6 +3,26 @@
 # SwITNet Ltd © - 2023, https://switnet.net/
 # GPLv3 or later.
 
+# Reset
+Color_Off='\e[0m'       # Text Reset
+# Regular Colors
+Black='\e[0;30m'        # Black
+Red='\e[0;31m'          # Red
+Green='\e[0;32m'        # Green
+Yellow='\e[0;33m'       # Yellow
+Blue='\e[0;34m'         # Blue
+Purple='\e[0;35m'       # Purple
+Cyan='\e[0;36m'         # Cyan
+
+printwc() {
+    printf "%b$2%b" "$1" "${Color_Off}"
+}
+print_title() {
+printwc "${Blue}" "\n#--------------------------------------------------"
+printwc "${Blue}" "\n# $1"
+printwc "${Blue}" "\n#--------------------------------------------------\n"
+}
+
 while getopts m: option
 do
 	case "${option}"
@@ -55,7 +75,7 @@ else
 fi
 }
 # Make sure we can rely on the match strings.
-echo "Testing match strings on config files."
+printf "Testing match strings on config files.\n"
 test_match "$WS_MATCH1" "$WS_CONF"
 test_match "$PROS_MATCH1" "$PROSODY_FILE"
 test_match "$PROS_MATCH2" "$PROSODY_FILE"
@@ -63,6 +83,9 @@ test_match "$PROS_MATCH3" "$PROSODY_FILE"
 test_match "$PROS_MATCH3" "$PROSODY_FILE"
 test_match "$CONFIG_MATCH1" "$MEET_CONF"
 
+#--------------------------------------------------
+print_title "Setup excalidraw backend."
+#--------------------------------------------------
 adduser --home "$EXCALIDRAW_HOME" --disabled-password --gecos "" excalidraw
 git clone https://github.com/jitsi/excalidraw-backend "$EXCALIDRAW_HOME/backend"
 test_match "$EXCAL_MATCH1" "$EXCAL_PORT_FILE"
@@ -73,16 +96,20 @@ sudo -u excalidraw cp .env.development .env.production
 
 # Use documented port to get some sort of standarization.
 if sed -n "/$EXCAL_MATCH1/,/});/p" "$EXCAL_PORT_FILE" |grep -q port: ; then
-    echo "Update predefined port for metrics to $EXCAL_NEW_PORT"
+    echo "> Update predefined port for metrics to $EXCAL_NEW_PORT\n"
     sed -i "/$EXCAL_MATCH1/,/});/s|port:.*,|port: $EXCAL_NEW_PORT,|" "$EXCAL_PORT_FILE"
 else
-    echo "Define new port from default to $EXCAL_NEW_PORT"
+    echo "> Define new port from default to $EXCAL_NEW_PORT\n"
     sed -i  "/$EXCAL_MATCH1/a \ \ \ \ port: $EXCAL_NEW_PORT," "$EXCAL_PORT_FILE"
 fi
 
+printf "\nInstalling npm backend.\n"
 sudo -u excalidraw npm install
 sudo -u excalidraw npm run build
 
+#--------------------------------------------------
+print_title "Setup system & jitsi config files."
+#--------------------------------------------------
 # Enable websocket on nginx
 sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
 sed -i "/$WS_MATCH1/i \ \ \ \ location = /socket.io/ {" "$WS_CONF"
@@ -96,9 +123,9 @@ sed -i "/$WS_MATCH1/i \ \ \ \ }" "$WS_CONF"
 sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
 
 if grep -rq room_metadata /etc/prosody/conf.d/ ;then
-    echo "Prosody seems to be already configured."
+    echo "> Prosody seems to be already configured."
 else
-    echo "Setting up prosody for whiteboard..."
+    echo "> Setting up prosody for whiteboard..."
     # Modules enabled
     sed -i "/$PROS_MATCH1/a \ \ \ \ \ \ \ \ \"room_metadata\";" "$PROSODY_FILE"
     # Define internal component
@@ -134,11 +161,11 @@ elif sed -n '/toolbarButtons: \[/,/\],/p' "$MEET_CONF" | \
     echo "> Enabling whiteboard toolbar."
     sed -i "/toolbarButtons:/a \ \ \ \ \ \ \ 'whiteboard'," "$MEET_CONF"
 else
-    echo "ToolbarButtons not customized, whiteboard should be enabled by default,"
-    echo "otherwise, please report to: https://forge.switnet.net/switnet/quick-jibri-installer/issues"
+    echo "> ToolbarButtons not customized, whiteboard should be enabled by default,"
+    echo "  otherwise, please report to: https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 
-# Systemd service
+printf "\n# Add systemd service\n"
 cat << EOF > /etc/systemd/system/excalidraw.service
 [Unit]
 Description=Excalidraw backend
@@ -159,4 +186,4 @@ EOF
 systemctl enable excalidraw.service
 systemctl start excalidraw.service
 
-echo -e "\nExcalidraw installation/setup complete!\n"
+printwc "${Green}" "\nExcalidraw setup complete!\n"
