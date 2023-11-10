@@ -144,7 +144,7 @@ printwc "${Blue}" "\n# $1"
 printwc "${Blue}" "\n#--------------------------------------------------\n"
 }
 clear
-printfwc "${Green}" '
+printwc "${Green}" '
 ########################################################################
                     Welcome to Jitsi/Jibri Installer
 ########################################################################
@@ -243,8 +243,8 @@ If you plan to enable other components such as,
  - Grafana
  - Etherpad
  - Whiteboards
- - additional Jibri Nodes
- - others.
+ - Connect additional Jibri Nodes
+ - Others
 
 >>> We highly recommend to increase resources of this server. <<<
 

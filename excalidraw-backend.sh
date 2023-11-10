@@ -47,14 +47,15 @@ EXCAL_PORT_FILE="$EXCALIDRAW_HOME/backend/src/index.ts"
 # Test for matches
 test_match() {
 if grep -q "$1" "$2" ; then
-    echo "It is possible to setup $(basename "$2"), continuing..."
+    echo "$(basename "$2") - OK..."
 else
-    echo "It is not possible to setup $(basename "$2"), stopping here."
+    echo "$(basename "$2"), FAIL..."
     echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
     exit
 fi
 }
 # Make sure we can rely on the match strings.
+echo "Testing match strings on config files."
 test_match "$WS_MATCH1" "$WS_CONF"
 test_match "$PROS_MATCH1" "$PROSODY_FILE"
 test_match "$PROS_MATCH2" "$PROSODY_FILE"
@@ -70,7 +71,7 @@ chown -R excalidraw:excalidraw "$EXCALIDRAW_HOME"
 cd "$EXCALIDRAW_HOME/backend"
 sudo -u excalidraw cp .env.development .env.production
 
-# Keep used replacement port to get some sort of standarization.
+# Use documented port to get some sort of standarization.
 if sed -n "/$EXCAL_MATCH1/,/});/p" "$EXCAL_PORT_FILE" |grep -q port: ; then
     echo "Update predefined port for metrics to $EXCAL_NEW_PORT"
     sed -i "/$EXCAL_MATCH1/,/});/s|port:.*,|port: $EXCAL_NEW_PORT,|" "$EXCAL_PORT_FILE"
@@ -110,9 +111,9 @@ else
     sed -i "/$PROS_MATCH3/i \\\n" "$PROSODY_FILE"
 fi
 
-echo "Checking for $(basename "$MEET_CONF") setup."
+echo "Checking for whitebord setup at $(basename "$MEET_CONF")."
 if [ -z "$(sed -n '/whiteboard: {/,/},/p' "$MEET_CONF")" ]; then
-    echo "No present configuration on current config.js file"
+    echo "> No present configuration on current config.js file"
     sed -i "/$CONFIG_MATCH1/i \\\n" "$MEET_CONF"
     sed -i "/$CONFIG_MATCH1/i \ \ \ \ whiteboard: {" "$MEET_CONF"
     sed -i "/$CONFIG_MATCH1/i \ \ \ \ \ \ \ \ enabled: true," "$MEET_CONF"
@@ -120,17 +121,17 @@ if [ -z "$(sed -n '/whiteboard: {/,/},/p' "$MEET_CONF")" ]; then
     sed -i "/$CONFIG_MATCH1/i \ \ \ \ }," "$MEET_CONF"
     sed -i "/$CONFIG_MATCH1/i \\\n" "$MEET_CONF"
 else
-    echo "Enabling configuration on current config.js file"
+    echo "> Enabling configuration on current config.js file"
     sed -i "/whiteboard: {/,/},/s|// ||" "$MEET_CONF"
     sed -i "/collabServerBaseUrl:/s|'https://.*'|'https://$DOMAIN'|" "$MEET_CONF"
 fi
 
 if  sed -n '/toolbarButtons: \[/,/\],/p' "$MEET_CONF" | \
     grep -v '//'| grep -q whiteboard ; then
-    echo "Whiteboard toolbar already enabled."
+    echo "> Whiteboard toolbar already enabled."
 elif sed -n '/toolbarButtons: \[/,/\],/p' "$MEET_CONF" | \
      grep -v '//'|grep -q toolbarButtons: ; then 
-    echo "Enabling whiteboard toolbar."
+    echo "> Enabling whiteboard toolbar."
     sed -i "/toolbarButtons:/a \ \ \ \ \ \ \ 'whiteboard'," "$MEET_CONF"
 else
     echo "ToolbarButtons not customized, whiteboard should be enabled by default,"
