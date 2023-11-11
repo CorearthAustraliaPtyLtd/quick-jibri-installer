@@ -1,6 +1,6 @@
 #!/bin/bash
 # Simple Jibri conf updater
-# SwITNet Ltd © - 2022, https://switnet.net/
+# SwITNet Ltd © - 2023, https://switnet.net/
 # GNU GPLv3 or later.
 
 while getopts m: option
@@ -77,18 +77,18 @@ if [ -f "$CONF_JSON"_disabled ] && \
    [ -f "$JIBRI_CONF" ] && \
    [ -f "$JIBRI_CONF"-dpkg-file ]; then
     echo -e "\n> This jibri config has been upgraded already, we'll exit...\n\nIf you think there maybe an error on checking you current jibri configuration.\nPlease report this to \
-https://github.com/switnet-ltd/quick-jibri-installer/issues\n"
+https://forge.switnet.net/switnet/quick-jibri-installer/issues\n"
     exit
 elif [ ! -f "$CONF_JSON" ] && \
    [ -f "$JIBRI_CONF" ] && \
    [ -f "$JIBRI_CONF"-dpkg-file ]; then
     echo -e "\n> This jibri seems to be running the latest configuration already, we'll exit...\n\nIf you think there maybe an error on checking you current jibri configuration.\nPlease report this to \
-https://github.com/switnet-ltd/quick-jibri-installer/issues\n"
+https://forge.switnet.net/switnet/quick-jibri-installer/issues\n"
     exit
 elif [ -f "$CONF_JSON" ] && \
    [ -f "$JIBRI_CONF" ]; then
     echo -e "\n> This jibri config seems to be candidate for upgrading, we'll continue...\nIf you think there maybe an error on checking you current jibri configuration.\nPlease report this to \
-https://github.com/switnet-ltd/quick-jibri-installer/issues\n"
+https://forge.switnet.net/switnet/quick-jibri-installer/issues\n"
 fi
 
 #Read missing variables

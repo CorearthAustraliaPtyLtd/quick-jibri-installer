@@ -1,6 +1,6 @@
 #!/bin/bash
 # JRA (Jibri Recordings Access) via Nextcloud
-# SwITNet Ltd © - 2022, https://switnet.net/
+# SwITNet Ltd © - 2023, https://switnet.net/
 # GPLv3 or later.
 
 while getopts m: option
@@ -25,7 +25,7 @@ exit_if_not_installed() {
 if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" != "1" ]; then
     echo " This instance doesn't have $1 installed, exiting..."
     echo " If you think this is an error, please report to:
-    -> https://github.com/switnet-ltd/quick-jibri-installer/issues "
+    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues "
     exit
 fi
 }
@@ -51,7 +51,7 @@ PHP_FPM_DIR="/etc/php/$PHPVER/fpm"
 PHP_INI="$PHP_FPM_DIR/php.ini"
 PHP_CONF="/etc/php/$PHPVER/fpm/pool.d/www.conf"
 NC_NGINX_SSL_PORT="$(grep "listen 44" /etc/nginx/sites-available/"$DOMAIN".conf | awk '{print$2}')"
-[ -z $NC_NGINX_SSL_PORT ] && NC_NGINX_SSL_PORT="443"
+[ -z "$NC_NGINX_SSL_PORT" ] && NC_NGINX_SSL_PORT="443"
 NC_REPO="https://download.nextcloud.com/server/releases"
 NCVERSION="$(curl -s -m 900 $NC_REPO/ | sed --silent 's/.*href="nextcloud-\([^"]\+\).zip.asc".*/\1/p' | sort --version-sort | tail -1)"
 STABLEVERSION="nextcloud-$NCVERSION"
@@ -63,7 +63,6 @@ NC_DB_PASSWD="$(tr -dc "a-zA-Z0-9#_*=" < /dev/urandom | fold -w 14 | head -n1)"
 DIR_RECORD="$(awk  -F '"' '/RECORDING/{print$2}'  /home/jibri/finalize_recording.sh|awk 'NR==1{print$1}')"
 REDIS_CONF="/etc/redis/redis.conf"
 JITSI_MEET_PROXY="/etc/nginx/modules-enabled/60-jitsi-meet.conf"
-
 [ -f "$JITSI_MEET_PROXY" ] && PREAD_PROXY=$(grep -nr "preread_server_name" "$JITSI_MEET_PROXY" | cut -d ":" -f1)
 PUBLIC_IP="$(dig +short myip.opendns.com @resolver1.opendns.com)"
 ISO3166_CODE=TBD
@@ -79,7 +78,7 @@ mv "$TMP_GPG_REPO"/"$1".gpg /etc/apt/trusted.gpg.d/
 install_aval_package() {
 for i in $1
   do
-     if [ -z "$(apt-cache madison $i 2>/dev/null)" ]; then
+     if [ -z "$(apt-cache madison "$i" 2>/dev/null)" ]; then
      echo " > Package $i not available on repo."
      else
      echo " > Add package $i to the install list"
@@ -94,7 +93,7 @@ exit_ifinstalled() {
 if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
     echo " This instance already has $1 installed, exiting..."
     echo " If you think this is an error, please report to:
-    -> https://github.com/switnet-ltd/quick-jibri-installer/issues "
+    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues "
     exit
 fi
 }
@@ -159,7 +158,7 @@ done
 while [ -z "$NC_PASS" ]  || [ ${#NC_PASS} -lt 8 ]
 do
     read -p "Nextcloud user password: " -r NC_PASS
-    if [ -z "$NC_PASS" ] || [ ${#NC_PASS} -lt8 ]; then
+    if [ -z "$NC_PASS" ] || [ ${#NC_PASS} -lt 8 ]; then
         echo -e " - This field is mandatory. \nPlease make sure it's at least 8 characters.\n"
     fi
 done
@@ -211,27 +210,26 @@ exit_ifinstalled postgresql-"$PSGVER"
 install_ifnot postgresql-"$PSGVER"
 
 # PHP 7.4 / 8.1
-
 add_php
 install_aval_package " \
             imagemagick \
-            php"$PHPVER"-fpm \
-            php"$PHPVER"-bcmath \
-            php"$PHPVER"-bz2 \
-            php"$PHPVER"-curl \
-            php"$PHPVER"-gd \
-            php"$PHPVER"-gmp \
-            php"$PHPVER"-imagick \
-            php"$PHPVER"-intl \
-            php"$PHPVER"-json \
-            php"$PHPVER"-ldap \
-            php"$PHPVER"-mbstring \
-            php"$PHPVER"-pgsql \
-            php"$PHPVER"-redis \
-            php"$PHPVER"-soap \
-            php"$PHPVER"-xml \
-            php"$PHPVER"-xmlrpc \
-            php"$PHPVER"-zip \
+            php$PHPVER-fpm \
+            php$PHPVER-bcmath \
+            php$PHPVER-bz2 \
+            php$PHPVER-curl \
+            php$PHPVER-gd \
+            php$PHPVER-gmp \
+            php$PHPVER-imagick \
+            php$PHPVER-intl \
+            php$PHPVER-json \
+            php$PHPVER-ldap \
+            php$PHPVER-mbstring \
+            php$PHPVER-pgsql \
+            php$PHPVER-redis \
+            php$PHPVER-soap \
+            php$PHPVER-xml \
+            php$PHPVER-xmlrpc \
+            php$PHPVER-zip \
             redis-server \
             unzip \
             "

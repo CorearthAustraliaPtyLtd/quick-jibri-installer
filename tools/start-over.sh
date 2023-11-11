@@ -1,6 +1,6 @@
 #!/bin/bash
 #Start over
-# SwITNet Ltd © - 2022, https://switnet.net/
+# SwITNet Ltd © - 2023, https://switnet.net/
 # GPLv3 or later.
 
 while getopts m: option

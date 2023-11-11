@@ -8,7 +8,7 @@
 # by "mephisto"
 #
 # Igor Kerstges © - 2021
-# SwITNet Ltd © - 2022, https://switnet.net/
+# SwITNet Ltd © - 2023, https://switnet.net/
 #
 # GPLv3 or later.
 
@@ -167,7 +167,7 @@ if [ -f "$WS_CONF" ]; then
     systemctl restart nginx
 else
     echo "No app configuration done to server file, please report to:
-    -> https://github.com/switnet-ltd/quick-jibri-installer/issues"
+    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 
 echo "
