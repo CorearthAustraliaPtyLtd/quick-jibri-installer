@@ -3,7 +3,6 @@
 #
 # Based on:
 # - https://community.jitsi.org/t/118883
-# by Dirk Materlik
 #
 # SwITNet Ltd © - 2023, https://switnet.net/
 # GPLv3 or later.
