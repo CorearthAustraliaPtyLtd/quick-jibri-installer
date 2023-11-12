@@ -1,3 +1,15 @@
+quick-jibri-installer (7.3.0)
+
+    * excalibur: add installer for whiteboard feature.
+    * quick_jibri_installer.sh: add excalidraw whiteboard backend
+      disable jigasi selector
+      add sed check test
+      update features list
+    * misc: update repository address to new home.
+    * misc: update year to late 2023.
+    
+-- Software, IT & Networks <info@switnet.net>  Sat, 11 Nov 2023 21:18:29 -0600
+
 quick-jibri-installer (7.2.1)
 
     * changelog: update previous version.
