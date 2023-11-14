@@ -1111,8 +1111,8 @@ if [ -f "$WS_CONF" ]; then
     sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
     systemctl reload nginx
 else
-    echo "No app configuration done to server file, please report to:
-    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
+    echo "No app configuration done to server file, please report to:"
+    echo "  -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 #Static avatar
 if [ "$ENABLE_SA" = "yes" ] && [ -f "$WS_CONF" ]; then
@@ -1131,8 +1131,8 @@ if [ "$DROP_TLS1" = "yes" ];then
 elif [ "$DROP_TLS1" = "no" ];then
     printf "\nNo TLSv1/1.1 dropping was done.\n\n"
 else
-    echo "No condition meet, please report to
-https://forge.switnet.net/switnet/quick-jibri-installer/issues "
+    echo -n "No condition meet, please report to:"
+    echo "https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 sleep .1
 #================== Setup prosody conf file =================
@@ -1294,7 +1294,7 @@ if [ -f "$WS_CONF" ]; then
 else
     printf "No interface_config.js configuration done to server file,"
     printf " please report to:"
-	printf "    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
+    printf "    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 #JRA via Nextcloud
 if [ "$ENABLE_NC_ACCESS" = "yes" ]; then
