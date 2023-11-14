@@ -46,110 +46,109 @@ printwc() {
     printf "%b$2%b" "$1" "${Color_Off}"
 }
 exit_ifinstalled() {
-if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
-    echo "
-This instance already has $1 installed, exiting...
-Please try again on a clean system.
- If you think this is an error, please report to:
-  -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
-    exit
-fi
+	if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
+        echo -e "\nThis instance already has $1 installed, exiting..."
+        echo -e "Please try again on a clean system."
+        echo -e " If you think this is an error, please report to:"
+        echo -e "  -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
+		exit
+	fi
 }
 exit_ifinstalled jitsi-meet
 
 rename_distro() {
-if [ "$DIST" = "$1" ]; then
-  DIST="$2"
-fi
+    if [ "$DIST" = "$1" ]; then
+        DIST="$2"
+    fi
 }
 #Trisquel distro upstream referencing.
 rename_distro nabia  focal
 rename_distro aramo  jammy
 
 install_ifnot() {
-if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
-    echo " $1 is installed, skipping..."
+    if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
+        echo " $1 is installed, skipping..."
     else
         printf "\n---- Installing %s ----" "$1"
         apt-get -yq2 install "$1"
-fi
+    fi
 }
 check_serv() {
-if [ "$APACHE_2" -eq 1 ]; then
-    echo "
-The recommended setup is using NGINX, exiting...
-"
-    exit
-elif [ "$NGINX" -eq 1 ]; then
-
-printf "\nWebserver already installed!\n"
-
-else
-    printf "\nInstalling nginx webserver!\n"
-    install_ifnot nginx
-fi
+    if [ "$APACHE_2" -eq 1 ]; then
+        echo -e "\nThe recommended setup is using NGINX, exiting...\n"
+        exit
+    elif [ "$NGINX" -eq 1 ]; then
+    printf "\nWebserver already installed!\n"
+    else
+        printf "\nInstalling nginx webserver!\n"
+        install_ifnot nginx
+    fi
 }
 check_snd_driver() {
-printf "\n# Checking ALSA - Loopback module..."
-echo "snd-aloop" | tee -a /etc/modules
-modprobe snd-aloop
-if [ "$(lsmod|awk '/snd_aloop/{print$1}'|awk 'NR==1')" = "snd_aloop" ]; then
-    echo "
-#-----------------------------------------------------------------------
-# Audio driver seems - OK.
-#-----------------------------------------------------------------------"
-else
-    echo "
-#-----------------------------------------------------------------------
-# Your audio driver might not be able to load.
-# We'll check the state of this Jibri with our 'test-jibri-env.sh' tool.
-#-----------------------------------------------------------------------"
-#Test tool
-  if [ "$MODE" = "debug" ]; then
-    bash "$PWD"/tools/test-jibri-env.sh -m debug
-  else
-    bash "$PWD"/tools/test-jibri-env.sh
-  fi
-read -n 1 -s -r -p "Press any key to continue..."$'\n'
-fi
+    printf "\n# Checking ALSA - Loopback module..."
+    echo "snd-aloop" | tee -a /etc/modules
+    modprobe snd-aloop
+    if [ "$(lsmod|awk '/snd_aloop/{print$1}'|awk 'NR==1')" = "snd_aloop" ]; then
+        echo -e "\n#-----------------------------------------------------------------------"
+        echo "# Audio driver seems - OK."
+        echo -e "#-----------------------------------------------------------------------\n"
+    else
+        echo -e "\n#-----------------------------------------------------------------------"
+        echo "# Your audio driver might not be able to load."
+        echo "# We'll check the state of this Jibri with our 'test-jibri-env.sh' tool."
+        echo -e "#-----------------------------------------------------------------------\n"
+        #Test tool
+        if [ "$MODE" = "debug" ]; then
+            bash "$PWD"/tools/test-jibri-env.sh -m debug
+        else
+            bash "$PWD"/tools/test-jibri-env.sh
+        fi
+        read -n 1 -s -r -p "Press any key to continue..."$'\n'
+    fi
 }
 # sed limiters for add-jibri-node.sh variables
 var_dlim() {
     grep -n "$1" add-jibri-node.sh|head -n1|cut -d ":" -f1
 }
+add_gpg_keyring() {
+    apt-key adv --recv-keys --keyserver keyserver.ubuntu.com \$1
+    apt-key export \$1 | gpg --dearmour | tee /tmp/\$1.gpg >/dev/null
+    apt-key del \$1
+    mv /tmp/\$1.gpg /etc/apt/trusted.gpg.d/
+}
 add_prosody_repo() {
-echo "Add Prosody repo"
-if [ "$PROSODY_REPO" = "main" ]; then
-    echo "Prosody repository already installed"
-else
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/prosody-debian-packages.key] http://packages.prosody.im/debian $(lsb_release -sc) main" > /etc/apt/sources.list.d/prosody.list
-    curl -s https://prosody.im/files/prosody-debian-packages.key > /etc/apt/trusted.gpg.d/prosody-debian-packages.key
-fi
+    echo "Add Prosody repo"
+    if [ "$PROSODY_REPO" = "main" ]; then
+        echo "Prosody repository already installed"
+    else
+        echo "deb [signed-by=/etc/apt/trusted.gpg.d/prosody-debian-packages.key] http://packages.prosody.im/debian $(lsb_release -sc) main" > /etc/apt/sources.list.d/prosody.list
+        curl -s https://prosody.im/files/prosody-debian-packages.key > /etc/apt/trusted.gpg.d/prosody-debian-packages.key
+    fi
 }
 dpkg-compare() {
-dpkg --compare-versions "$(dpkg-query -f='${Version}' --show "$1")" "$2" "$3"
+    dpkg --compare-versions "$(dpkg-query -f='${Version}' --show "$1")" "$2" "$3"
 }
 wait_seconds() {
-secs=$(($1))
-while [ $secs -gt 0 ]; do
-   echo -ne "$secs\033[0K\r"
-   sleep 1
-   : $((secs--))
-done
+    secs=$(($1))
+    while [ $secs -gt 0 ]; do
+       echo -ne "$secs\033[0K\r"
+       sleep 1
+       : $((secs--))
+    done
 }
 print_title() {
-printwc "${Blue}" "\n#--------------------------------------------------"
-printwc "${Blue}" "\n# $1"
-printwc "${Blue}" "\n#--------------------------------------------------\n"
+    printwc "${Blue}" "\n#--------------------------------------------------"
+    printwc "${Blue}" "\n# $1"
+    printwc "${Blue}" "\n#--------------------------------------------------\n"
 }
 test_match() {
-if grep -q "$1" "$2" ; then
-    echo "$(basename "$2") - OK..."
-else
-    echo "$(basename "$2"), FAIL..."
-    echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
-    exit
-fi
+    if grep -q "$1" "$2" ; then
+        echo "$(basename "$2") - OK..."
+    else
+        echo "$(basename "$2"), FAIL..."
+        echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
+        exit
+    fi
 }
 clear
 printwc "${Green}" '
@@ -170,7 +169,7 @@ Featuring:
 Learn more about these at,
 Main repository: https://forge.switnet.net/switnet/quick-jibri-installer
 Wiki and documentation: https://forge.switnet.net/switnet/quick-jibri-installer/wiki\n\n'
-
+sleep .1
 read -n 1 -s -r -p "Press any key to continue..."$'\n'
 
 #Check if user is root
@@ -193,8 +192,8 @@ NEXT_LTS_DATE=$(date -d 2024-04-01 +%s)
 
 if [ "$DIST" = "focal" ]; then
   if [ "$TODAY" -gt "$NEXT_LTS_DATE" ]; then
-    echo "  > $(lsb_release -sc), even when it's compatible and functional.
-    We suggest to use the next (LTS) release, for longer support and security reasons."
+    echo "  > $(lsb_release -sc), even when it's compatible and functional."
+    echo "    We suggest to use the next (LTS) release, for longer support and security reasons."
     read -n 1 -s -r -p "Press any key to continue..."$'\n'
   else
     echo "Focal is supported."
@@ -281,9 +280,9 @@ printf "\nChecking for common desktop system oriented purpose....\n"
 for de in "${SYSTEM_DE_ARRAY[@]}"
 do
     if [ "$(dpkg-query -W -f='${Status}' "$de" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
-        printf "\n > This instance has %s installed, exiting...
-\nPlease avoid using this installer on a desktop-user oriented GNU/Linux system.
- This is an unsupported use, as it will likely BREAK YOUR SYSTEM, so please don't." "$de"
+        printf "\n > This instance has %s installed, exiting...\n" "$de"
+        printf "\nPlease avoid using this installer on a desktop-user oriented GNU/Linux system.\n"
+        printf "This is an unsupported use, as it will likely BREAK YOUR SYSTEM, so please don't.\n"
         exit
     else
         printf " > No standard desktop environment for user oriented porpuse detected, good!, continuing...\n\n"
@@ -340,14 +339,16 @@ sleep .1
     if [ "$PUBLIC_IP" = "$(dig -4 +short "$JITSI_DOMAIN"||awk -v RS='([0-9]+\\.){3}[0-9]+' 'RT{print RT}')" ]; then
         printf "\nServer public IP  & DNS record for %s seems to match, continuing..." "$JITSI_DOMAIN"
     else
-       echo "Server public IP ($PUBLIC_IP) & DNS record for $JITSI_DOMAIN don't seem to match."
-    echo "  > Please check your dns records are applied and updated, otherwise components may fail."
-      read -p "  > Do you want to continue?: (yes or no)$NL" -r DNS_CONTINUE
+        echo -n "Server public IP ($PUBLIC_IP) & DNS record for $JITSI_DOMAIN"
+        echo " don't seem to match."
+        echo -n "  > Please check your dns records are applied and updated,"
+        echo " otherwise components may fail."
+        read -p "  > Do you want to continue?: (yes or no)$NL" -r DNS_CONTINUE
         if [ "$DNS_CONTINUE" = "yes" ]; then
-          echo "  - We'll continue anyway..."
+            echo "  - We'll continue anyway..."
         else
-          echo "  - Exiting for now..."
-          exit
+            echo "  - Exiting for now..."
+            exit
         fi
     fi
 fi
@@ -375,8 +376,8 @@ if [ "$LE_SSL" = "yes" ]; then
 apt-get -y install \
                 certbot
     if [ "$(dpkg-query -W -f='${Status}' ufw 2>/dev/null | grep -c "ok installed")" == "1"  ]; then
-        echo "# Disable pre-installed ufw, more on firewall see:
-    > https://forge.switnet.net/switnet/quick-jibri-installer/wiki/Firewall"
+        echo "# Disable pre-installed ufw, more on firewall see:"
+        echo "    > https://forge.switnet.net/switnet/quick-jibri-installer/wiki/Firewall"
         ufw disable
     fi
 fi
@@ -1117,9 +1118,9 @@ if [ "$ENABLE_SC" = "yes" ]; then
     prosodyctl register "$SEC_ROOM_USER" "$DOMAIN" "$SEC_ROOM_PASS"
 sleep .1
     printf "\nSecure rooms are being enabled...\n"
-    echo "You'll be able to login Secure Room chat with '${SEC_ROOM_USER}' \
-or '${SEC_ROOM_USER}@${DOMAIN}' using the password you just entered.
-If you have issues with the password refer to your sysadmin."
+    echo -n "You'll be able to login Secure Room chat with '${SEC_ROOM_USER}' "
+    echo "or '${SEC_ROOM_USER}@${DOMAIN}' using the password you just entered."
+    echo "If you have issues with the password refer to your sysadmin."
     sed -i "s|#org.jitsi.jicofo.auth.URL=XMPP:|org.jitsi.jicofo.auth.URL=XMPP:|" "$JICOFO_SIP"
     sed -i "s|SEC_ROOM=.*|SEC_ROOM=\"on\"|" jm-bm.sh
 fi
@@ -1219,7 +1220,8 @@ if [ "$DISABLE_LOCAL_JIBRI" = "yes" ]; then
     systemctl disable jibri
     systemctl disable jibri-xorg
     systemctl disable jibri-icewm
-# Manually apply permissions since finalize_recording.sh won't be triggered under this server options.
+    # Manually apply permissions since finalize_recording.sh won't be
+    # triggered under this server options.
     chmod -R 770 "$DIR_RECORD"
 fi
 
