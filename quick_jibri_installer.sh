@@ -38,118 +38,125 @@ DIST=$(lsb_release -sc)
 GOOGL_REPO="/etc/apt/sources.list.d/dl_google_com_linux_chrome_deb.list"
 GOOGLE_ACTIVE_REPO=$(apt-cache policy | awk '/chrome/{print$3}' | awk -F "/" 'NR==1{print$2}')
 PROSODY_REPO="$(apt-cache policy | awk '/prosody/{print$3}' | awk -F "/" 'NR==1{print$2}')"
-PUBLIC_IP="$(dig +short myip.opendns.com @resolver1.opendns.com)"
+PUBLIC_IP="$(dig -4 +short myip.opendns.com @resolver1.opendns.com)"
 NL="$(printf '\n  ')"
 NODEJS_VER="18"
+JITSI_GPG_KEY="/etc/apt/trusted.gpg.d/jitsi-key.gpg.key"
+PROSODY_GPG_KEY="/etc/apt/trusted.gpg.d/prosody-debian-packages.key"
+NODEJS_GPG_KEY="/etc/apt/keyrings/nodesource.gpg"
+TODAY=$(date +%s)
+NEXT_LTS_DATE=$(date -d 2024-04-01 +%s)
+CERT_CHOICE_DEBCONF="Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)"
 
 printwc() {
     printf "%b$2%b" "$1" "${Color_Off}"
 }
 exit_ifinstalled() {
-if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
-    echo "
-This instance already has $1 installed, exiting...
-Please try again on a clean system.
- If you think this is an error, please report to:
-  -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
-    exit
-fi
+	if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
+        echo -e "\nThis instance already has $1 installed, exiting..."
+        echo -e "Please try again on a clean system."
+        echo -e " If you think this is an error, please report to:"
+        echo -e "  -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
+		exit
+	fi
 }
 exit_ifinstalled jitsi-meet
 
 rename_distro() {
-if [ "$DIST" = "$1" ]; then
-  DIST="$2"
-fi
+    if [ "$DIST" = "$1" ]; then
+        DIST="$2"
+    fi
 }
 #Trisquel distro upstream referencing.
 rename_distro nabia  focal
 rename_distro aramo  jammy
 
 install_ifnot() {
-if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
-    echo " $1 is installed, skipping..."
+    if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
+        echo " $1 is installed, skipping..."
     else
         printf "\n---- Installing %s ----" "$1"
         apt-get -yq2 install "$1"
-fi
+    fi
 }
 check_serv() {
-if [ "$APACHE_2" -eq 1 ]; then
-    echo "
-The recommended setup is using NGINX, exiting...
-"
-    exit
-elif [ "$NGINX" -eq 1 ]; then
-
-printf "\nWebserver already installed!\n"
-
-else
-    printf "\nInstalling nginx webserver!\n"
-    install_ifnot nginx
-fi
+    if [ "$APACHE_2" -eq 1 ]; then
+        echo -e "\nThe recommended setup is using NGINX, exiting...\n"
+        exit
+    elif [ "$NGINX" -eq 1 ]; then
+    printf "\nWebserver already installed!\n"
+    else
+        printf "\nInstalling nginx webserver!\n"
+        install_ifnot nginx
+    fi
 }
 check_snd_driver() {
-printf "\n# Checking ALSA - Loopback module..."
-echo "snd-aloop" | tee -a /etc/modules
-modprobe snd-aloop
-if [ "$(lsmod|awk '/snd_aloop/{print$1}'|awk 'NR==1')" = "snd_aloop" ]; then
-    echo "
-#-----------------------------------------------------------------------
-# Audio driver seems - OK.
-#-----------------------------------------------------------------------"
-else
-    echo "
-#-----------------------------------------------------------------------
-# Your audio driver might not be able to load.
-# We'll check the state of this Jibri with our 'test-jibri-env.sh' tool.
-#-----------------------------------------------------------------------"
-#Test tool
-  if [ "$MODE" = "debug" ]; then
-    bash "$PWD"/tools/test-jibri-env.sh -m debug
-  else
-    bash "$PWD"/tools/test-jibri-env.sh
-  fi
-read -n 1 -s -r -p "Press any key to continue..."$'\n'
-fi
+    printf "\n# Checking ALSA - Loopback module..."
+    echo "snd-aloop" | tee -a /etc/modules
+    modprobe snd-aloop
+    if [ "$(lsmod|awk '/snd_aloop/{print$1}'|awk 'NR==1')" = "snd_aloop" ]; then
+        echo -e "\n#-----------------------------------------------------------------------"
+        echo "# Audio driver seems - OK."
+        echo -e "#-----------------------------------------------------------------------\n"
+    else
+        echo -e "\n#-----------------------------------------------------------------------"
+        echo "# Your audio driver might not be able to load."
+        echo "# We'll check the state of this Jibri with our 'test-jibri-env.sh' tool."
+        echo -e "#-----------------------------------------------------------------------\n"
+        #Test tool
+        if [ "$MODE" = "debug" ]; then
+            bash "$PWD"/tools/test-jibri-env.sh -m debug
+        else
+            bash "$PWD"/tools/test-jibri-env.sh
+        fi
+        read -n 1 -s -r -p "Press any key to continue..."$'\n'
+    fi
 }
 # sed limiters for add-jibri-node.sh variables
 var_dlim() {
     grep -n "$1" add-jibri-node.sh|head -n1|cut -d ":" -f1
 }
+add_gpg_keyring() {
+    apt-key adv --recv-keys --keyserver keyserver.ubuntu.com \$1
+    apt-key export \$1 | gpg --dearmour | tee /tmp/\$1.gpg >/dev/null
+    apt-key del \$1
+    mv /tmp/\$1.gpg /etc/apt/trusted.gpg.d/
+}
 add_prosody_repo() {
-echo "Add Prosody repo"
-if [ "$PROSODY_REPO" = "main" ]; then
-    echo "Prosody repository already installed"
-else
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/prosody-debian-packages.key] http://packages.prosody.im/debian $(lsb_release -sc) main" > /etc/apt/sources.list.d/prosody.list
-    curl -s https://prosody.im/files/prosody-debian-packages.key > /etc/apt/trusted.gpg.d/prosody-debian-packages.key
-fi
+    echo "Add Prosody repo"
+    if [ "$PROSODY_REPO" = "main" ]; then
+        echo "Prosody repository already installed"
+    else
+        echo "deb [signed-by=$PROSODY_GPG_KEY] http://packages.prosody.im/debian $DIST main" \
+            > /etc/apt/sources.list.d/prosody.list
+        curl -s https://prosody.im/files/prosody-debian-packages.key \
+            > "$PROSODY_GPG_KEY"
+    fi
 }
 dpkg-compare() {
-dpkg --compare-versions "$(dpkg-query -f='${Version}' --show "$1")" "$2" "$3"
+    dpkg --compare-versions "$(dpkg-query -f='${Version}' --show "$1")" "$2" "$3"
 }
 wait_seconds() {
-secs=$(($1))
-while [ $secs -gt 0 ]; do
-   echo -ne "$secs\033[0K\r"
-   sleep 1
-   : $((secs--))
-done
+    secs=$(($1))
+    while [ $secs -gt 0 ]; do
+       echo -ne "$secs\033[0K\r"
+       sleep 1
+       : $((secs--))
+    done
 }
 print_title() {
-printwc "${Blue}" "\n#--------------------------------------------------"
-printwc "${Blue}" "\n# $1"
-printwc "${Blue}" "\n#--------------------------------------------------\n"
+    printwc "${Blue}" "\n#--------------------------------------------------"
+    printwc "${Blue}" "\n# $1"
+    printwc "${Blue}" "\n#--------------------------------------------------\n"
 }
 test_match() {
-if grep -q "$1" "$2" ; then
-    echo "$(basename "$2") - OK..."
-else
-    echo "$(basename "$2"), FAIL..."
-    echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
-    exit
-fi
+    if grep -q "$1" "$2" ; then
+        echo "$(basename "$2") - OK..."
+    else
+        echo "$(basename "$2"), FAIL..."
+        echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
+        exit
+    fi
 }
 clear
 printwc "${Green}" '
@@ -170,7 +177,7 @@ Featuring:
 Learn more about these at,
 Main repository: https://forge.switnet.net/switnet/quick-jibri-installer
 Wiki and documentation: https://forge.switnet.net/switnet/quick-jibri-installer/wiki\n\n'
-
+sleep .1
 read -n 1 -s -r -p "Press any key to continue..."$'\n'
 
 #Check if user is root
@@ -188,13 +195,11 @@ else
     exit
 fi
 #Suggest 22.04 LTS release over 20.04 in April 2024
-TODAY=$(date +%s)
-NEXT_LTS_DATE=$(date -d 2024-04-01 +%s)
-
 if [ "$DIST" = "focal" ]; then
   if [ "$TODAY" -gt "$NEXT_LTS_DATE" ]; then
-    echo "  > $(lsb_release -sc), even when it's compatible and functional.
-    We suggest to use the next (LTS) release, for longer support and security reasons."
+    echo "  > $(lsb_release -sc), even when it's compatible and functional."
+    echo -n "    We suggest to use the next (LTS) release, for longer"
+    echo " support and security reasons."
     read -n 1 -s -r -p "Press any key to continue..."$'\n'
   else
     echo "Focal is supported."
@@ -204,7 +209,8 @@ fi
 #Check system resources
 printf "\n\nVerifying System Resources:"
 if [ "$(nproc --all)" -lt 4 ];then
-    printf "\nWarning!: The system do not meet the minimum CPU requirements for Jibri to run."
+    printf "\nWarning!: The system do not meet the minimum CPU"
+    printf " requirements for Jibri to run."
     printf "\n>> We recommend 4 cores/threads for Jibri!\n"
     CPU_MIN="N"
 else
@@ -215,7 +221,8 @@ sleep .1
 ### Test RAM size (8GB min) ###
 mem_available="$(grep MemTotal /proc/meminfo| grep -o '[0-9]\+')"
 if [ "$mem_available" -lt 7700000 ]; then
-    printf "\nWarning!: The system do not meet the minimum RAM requirements for Jibri to run."
+    printf "\nWarning!: The system do not meet the minimum RAM"
+    printf " requirements for Jibri to run."
     printf "\n>> We recommend 8GB RAM for Jibri!\n\n"
     MEM_MIN="N"
 else
@@ -227,8 +234,10 @@ if [ "$CPU_MIN" = "Y" ] && [ "$MEM_MIN" = "Y" ];then
     echo "All requirements seems meet!"
     printf "\n    - We hope you have a nice recording/streaming session\n"
 else
-    printf "CPU (%s)/RAM (%s MiB) does NOT meet minimum recommended requirements!" "$(nproc --all)" "$((mem_available/1024))"
-    printf "\nEven when you can use the videoconferencing sessions, we advice to increase the resources in order to user Jibri.\n\n"
+    printf "CPU (%s)/RAM (%s MiB)" "$(nproc --all)" "$((mem_available/1024))"
+    printf " does NOT meet minimum recommended requirements!"
+    printf "\nEven when you can use the videoconferencing sessions, we"
+    printf " advice to increase the resources in order to user Jibri.\n\n"
 sleep .1
     while [ "$CONTINUE_LOW_RES" != "yes" ] && [ "$CONTINUE_LOW_RES" != "no" ]
     do
@@ -238,7 +247,8 @@ sleep .1
             exit
     elif [ "$CONTINUE_LOW_RES" = "yes" ]; then
             printf "\n - We highly recommend to increase the server resources."
-            printf "\n - Otherwise, please think about adding dedicated jibri nodes instead.\n\n"
+            printf "\n - Otherwise, please think about adding dedicated"
+            printf " jibri nodes instead.\n\n"
     fi
     done
 fi
@@ -266,27 +276,32 @@ sleep .1
     do
     read -p "> Do you want to disable local jibri service?: (yes or no)$NL" -r DISABLE_LOCAL_JIBRI
         if [ "$DISABLE_LOCAL_JIBRI" = "no" ]; then
-            printf " - Please keep in mind that we might not support underpowered servers.\n"
+            printf " - Please keep in mind that we might not support"
+            printf " underpowered servers.\n"
         elif [ "$DISABLE_LOCAL_JIBRI" = "yes" ]; then
-            printf " - You can add dedicated jibri nodes later, see more at the wiki.\n"
+            printf " - You can add dedicated jibri nodes later, see more"
+            printf " at the wiki.\n"
         fi
     done
 fi
 sleep .1
 #Check system oriented porpuse
-apt-get -yq2 update
+apt-get -q2 update
 SYSTEM_DE="$(apt-cache search "ubuntu-(desktop|mate-desktop)"|awk '{print$1}'|xargs|sed 's|$| trisquel triskel trisquel-mini|')"
 SYSTEM_DE_ARRAY=( "$SYSTEM_DE" )
 printf "\nChecking for common desktop system oriented purpose....\n"
 for de in "${SYSTEM_DE_ARRAY[@]}"
 do
     if [ "$(dpkg-query -W -f='${Status}' "$de" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
-        printf "\n > This instance has %s installed, exiting...
-\nPlease avoid using this installer on a desktop-user oriented GNU/Linux system.
- This is an unsupported use, as it will likely BREAK YOUR SYSTEM, so please don't." "$de"
+        printf "\n > This instance has %s installed, exiting...\n" "$de"
+        printf "\nPlease avoid using this installer on a desktop-user"
+        printf " oriented GNU/Linux system.\n"
+        printf "This is an unsupported use, as it will likely BREAK YOUR"
+        printf " SYSTEM, so please don't.\n"
         exit
     else
-        printf " > No standard desktop environment for user oriented porpuse detected, good!, continuing...\n\n"
+        printf " > No standard desktop environment for user oriented"
+        printf " porpuse detected, good!, continuing...\n\n"
     fi
 done
 sleep .1
@@ -298,8 +313,10 @@ printf "\nAdd Jitsi repo\n"
 if [ "$JITSI_REPO" = "stable" ]; then
     printf " - Jitsi stable repository already installed\n\n"
 else
-    echo 'deb [signed-by=/etc/apt/trusted.gpg.d/jitsi-key.gpg.key] http://download.jitsi.org stable/' > /etc/apt/sources.list.d/jitsi-stable.list
-    curl -s https://download.jitsi.org/jitsi-key.gpg.key > /etc/apt/trusted.gpg.d/jitsi-key.gpg.key
+    echo "deb [signed-by=$JITSI_GPG_KEY] http://download.jitsi.org stable/" \
+        > /etc/apt/sources.list.d/jitsi-stable.list
+    curl -s https://download.jitsi.org/jitsi-key.gpg.key \
+        > "$JITSI_GPG_KEY"
     JITSI_REPO="stable"
 fi
 sleep .1
@@ -311,7 +328,8 @@ if [ "$LE_SSL" = yes ]; then
     printf " - We'll setup Let's Encrypt SSL certs.\n\n"
 else
     printf " - We'll let you choose later on for it."
-    printf "   Please be aware that a valid SSL cert is required for some features to work properly.\n\n"
+    printf "   Please be aware that a valid SSL cert is required for"
+    printf " some features to work properly.\n\n"
 fi
 done
 sleep .1
@@ -338,23 +356,26 @@ sleep .1
 sleep .1
   #Simple DNS test
     if [ "$PUBLIC_IP" = "$(dig -4 +short "$JITSI_DOMAIN"||awk -v RS='([0-9]+\\.){3}[0-9]+' 'RT{print RT}')" ]; then
-        printf "\nServer public IP  & DNS record for %s seems to match, continuing..." "$JITSI_DOMAIN"
+        printf "\nServer public IP  & DNS record for"
+        printf " %s seems to match, continuing..." "$JITSI_DOMAIN"
     else
-       echo "Server public IP ($PUBLIC_IP) & DNS record for $JITSI_DOMAIN don't seem to match."
-    echo "  > Please check your dns records are applied and updated, otherwise components may fail."
-      read -p "  > Do you want to continue?: (yes or no)$NL" -r DNS_CONTINUE
+        echo -n "Server public IP ($PUBLIC_IP) & DNS record for $JITSI_DOMAIN"
+        echo " don't seem to match."
+        echo -n "  > Please check your dns records are applied and updated,"
+        echo " otherwise components may fail."
+        read -p "  > Do you want to continue?: (yes or no)$NL" -r DNS_CONTINUE
         if [ "$DNS_CONTINUE" = "yes" ]; then
-          echo "  - We'll continue anyway..."
+            echo "  - We'll continue anyway..."
         else
-          echo "  - Exiting for now..."
-          exit
+            echo "  - Exiting for now..."
+            exit
         fi
     fi
 fi
 sleep .1
 # Requirements
-printf "\nWe'll start by installing system requirements this may take a while please be patient...\n"
-apt-get update -q2
+printf "\nWe'll start by installing system requirements this may take"
+printf " a while please be patient...\n"
 apt-get dist-upgrade -yq2
 
 apt-get -y install \
@@ -375,14 +396,15 @@ if [ "$LE_SSL" = "yes" ]; then
 apt-get -y install \
                 certbot
     if [ "$(dpkg-query -W -f='${Status}' ufw 2>/dev/null | grep -c "ok installed")" == "1"  ]; then
-        echo "# Disable pre-installed ufw, more on firewall see:
-    > https://forge.switnet.net/switnet/quick-jibri-installer/wiki/Firewall"
+        echo "# Disable pre-installed ufw, more on firewall see:"
+        echo "    > https://forge.switnet.net/switnet/quick-jibri-installer/wiki/Firewall"
         ufw disable
     fi
 fi
 
 echo "# Check and Install HWE kernel if possible..."
-HWE_VIR_MOD="$(apt-cache madison linux-image-generic-hwe-"$(lsb_release -sr)" 2>/dev/null|head -n1|grep -c "hwe-$(lsb_release -sr)")"
+HWE_VIR_MOD="$(apt-cache madison linux-image-generic-hwe-"$(lsb_release -sr)" \
+             2>/dev/null|head -n1|grep -c "hwe-$(lsb_release -sr)")"
 if [ "$HWE_VIR_MOD" = "1" ]; then
     apt-get -y install \
     linux-image-generic-hwe-"$(lsb_release -sr)" \
@@ -401,11 +423,15 @@ echo "
 #--------------------------------------------------
 "
 if [ "$LE_SSL" = "yes" ]; then
-echo "set jitsi-meet/cert-choice	select	Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)" | debconf-set-selections
-echo "jitsi-videobridge2	jitsi-videobridge/jvb-hostname	string	$JITSI_DOMAIN" | debconf-set-selections
-echo "jitsi-meet-web-config	jitsi-meet/email	string $SYSADMIN_EMAIL" | debconf-set-selections
+    echo "set jitsi-meet/cert-choice	select	$CERT_CHOICE_DEBCONF" \
+        | debconf-set-selections
+    echo "jitsi-videobridge2	jitsi-videobridge/jvb-hostname	string	$JITSI_DOMAIN" \
+        | debconf-set-selections
+    echo "jitsi-meet-web-config	jitsi-meet/email	string $SYSADMIN_EMAIL" \
+        | debconf-set-selections
 fi
-echo "jitsi-meet-web-config	jitsi-meet/jaas-choice	boolean	false"  | debconf-set-selections
+echo "jitsi-meet-web-config	jitsi-meet/jaas-choice	boolean	false" \
+        | debconf-set-selections
 apt-get -y install \
                 jitsi-meet \
                 jibri \
@@ -422,9 +448,10 @@ if [ "$(dpkg-query -W -f='${Status}' nodejs 2>/dev/null | grep -c "ok")" == "1" 
     echo "Nodejs is installed, skipping..."
 else
     mkdir -p /etc/apt/keyrings
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODEJS_VER.x nodistro main" | \
-    tee /etc/apt/sources.list.d/nodesource.list
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+        | gpg --dearmor -o "$NODEJS_GPG_KEY"
+    echo "deb [signed-by=$NODEJS_GPG_KEY] https://deb.nodesource.com/node_$NODEJS_VER.x nodistro main" | \
+        tee /etc/apt/sources.list.d/nodesource.list
     apt-get update -yq2
     apt-get install -yq2 nodejs
 
@@ -450,7 +477,7 @@ else
 fi
 apt-get -q2 update
 apt-get install -yq2 google-chrome-stable
-rm -rf /etc/apt/sources.list.d/dl_google_com_linux_chrome_deb.list
+rm -rf "$GOOGL_REPO"
 
 G_CHROME=$(apt-cache madison google-chrome-stable|awk '{print$3}'|cut -d. -f1-3)
 CHROMELAB_URL="https://googlechromelabs.github.io/chrome-for-testing"
@@ -614,17 +641,20 @@ select opt in "${options[@]}"
 do
     case $opt in
         "Local")
-            printf "\n  > Users are created manually using prosodyctl, only moderators can open a room or launch recording.\n"
+            printf "\n  > Users are created manually using prosodyctl,"
+            printf " only moderators can open a room or launch recording.\n"
             ENABLE_SC="yes"
             break
             ;;
         "JWT")
-            printf "\n  > A external app manage the token usage/creation, like RocketChat does.\n"
+            printf "\n  > A external app manage the token usage/creation,"
+            printf " like RocketChat does.\n"
             ENABLE_JWT="yes"
             break
             ;;
         "None")
-            printf "\n  > Everyone can access the room as moderators as there is no auth mechanism.\n"
+            printf "\n  > Everyone can access the room as moderators as"
+            printf " there is no auth mechanism.\n"
             break
             ;;
         *) echo "Invalid option $REPLY, choose 1, 2 or 3";;
@@ -632,19 +662,22 @@ do
 done
 sleep .1
 # Set jibris default resolution
-printf "\n> What jibri resolution should be the default for this and all the following jibri nodes?\n"
+printf "\n> What jibri resolution should be the default for this and all"
+printf " the following jibri nodes?\n"
 PS3='The more resolution the more resources jibri will require to record properly: '
 jib_res=("HD 720" "FHD 1080")
 select res in "${jib_res[@]}"
 do
     case $res in
         "HD 720")
-            printf "\n  > HD (1280x720) is good enough for most cases, and requires a moderate high hw requirements.\n\n"
+            printf "\n  > HD (1280x720) is good enough for most cases,"
+            printf " and requires a moderate high hw requirements.\n\n"
             JIBRI_RES="720"
             break
             ;;
         "FHD 1080")
-            printf "\n  > Full HD (1920x1080) is the best resolution available, it also requires high hw requirements.\n\n"
+            printf "\n  > Full HD (1920x1080) is the best resolution"
+            printf " available, it also requires high hw requirements.\n\n"
             JIBRI_RES="1080"
             break
             ;;
@@ -1078,8 +1111,8 @@ if [ -f "$WS_CONF" ]; then
     sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
     systemctl reload nginx
 else
-    echo "No app configuration done to server file, please report to:
-    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
+    echo "No app configuration done to server file, please report to:"
+    echo "  -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 #Static avatar
 if [ "$ENABLE_SA" = "yes" ] && [ -f "$WS_CONF" ]; then
@@ -1098,8 +1131,8 @@ if [ "$DROP_TLS1" = "yes" ];then
 elif [ "$DROP_TLS1" = "no" ];then
     printf "\nNo TLSv1/1.1 dropping was done.\n\n"
 else
-    echo "No condition meet, please report to
-https://forge.switnet.net/switnet/quick-jibri-installer/issues "
+    echo -n "No condition meet, please report to:"
+    echo "https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 sleep .1
 #================== Setup prosody conf file =================
@@ -1117,9 +1150,9 @@ if [ "$ENABLE_SC" = "yes" ]; then
     prosodyctl register "$SEC_ROOM_USER" "$DOMAIN" "$SEC_ROOM_PASS"
 sleep .1
     printf "\nSecure rooms are being enabled...\n"
-    echo "You'll be able to login Secure Room chat with '${SEC_ROOM_USER}' \
-or '${SEC_ROOM_USER}@${DOMAIN}' using the password you just entered.
-If you have issues with the password refer to your sysadmin."
+    echo -n "You'll be able to login Secure Room chat with '${SEC_ROOM_USER}' "
+    echo "or '${SEC_ROOM_USER}@${DOMAIN}' using the password you just entered."
+    echo "If you have issues with the password refer to your sysadmin."
     sed -i "s|#org.jitsi.jicofo.auth.URL=XMPP:|org.jitsi.jicofo.auth.URL=XMPP:|" "$JICOFO_SIP"
     sed -i "s|SEC_ROOM=.*|SEC_ROOM=\"on\"|" jm-bm.sh
 fi
@@ -1219,7 +1252,8 @@ if [ "$DISABLE_LOCAL_JIBRI" = "yes" ]; then
     systemctl disable jibri
     systemctl disable jibri-xorg
     systemctl disable jibri-icewm
-# Manually apply permissions since finalize_recording.sh won't be triggered under this server options.
+    # Manually apply permissions since finalize_recording.sh won't be
+    # triggered under this server options.
     chmod -R 770 "$DIR_RECORD"
 fi
 
@@ -1258,8 +1292,9 @@ if [ -f "$WS_CONF" ]; then
     sed -i "/external_api.js/i \\\n" "$WS_CONF"
     systemctl reload nginx
 else
-    echo "No interface_config.js configuration done to server file, please report to:
-    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
+    printf "No interface_config.js configuration done to server file,"
+    printf " please report to:"
+    printf "    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
 #JRA via Nextcloud
 if [ "$ENABLE_NC_ACCESS" = "yes" ]; then
