@@ -26,6 +26,31 @@ printwc "${Blue}" "\n#--------------------------------------------------"
 printwc "${Blue}" "\n# $1"
 printwc "${Blue}" "\n#--------------------------------------------------\n"
 }
+restart_jibri() {
+if [ "$(dpkg-query -W -f='${Status}' "jibri" 2>/dev/null | grep -c "ok installed")" == "1" ]
+then
+    systemctl restart jibri
+    systemctl restart jibri-icewm
+    systemctl restart jibri-xorg
+else
+    echo "Jibri service not installed"
+fi
+}
+restart_services() {
+    systemctl restart jitsi-videobridge2
+    systemctl restart jicofo
+    restart_jibri
+    systemctl restart prosody
+}
+test_match() {
+if grep -q "$1" "$2" ; then
+    echo "$(basename "$2") - OK..."
+else
+    echo "$(basename "$2"), FAIL..."
+    echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
+    exit
+fi
+}
 
 while getopts m: option
 do
@@ -61,23 +86,12 @@ WS_MATCH1='# ensure all static content can always be found first'
 PROS_MATCH1='"av_moderation";'
 PROS_MATCH2='breakout_rooms_muc = "breakout.'
 PROS_MATCH3='VirtualHost "recorder.'
-CONFIG_MATCH1='Settings for the GIPHY integration'
+CONFIG_MATCH1='List of undocumented settings used in jitsi-meet'
 EXCALIDRAW_HOME="/opt/excalidraw"
 EXCAL_MATCH1="prometheus.metrics(io"
 EXCAL_NEW_PORT="9091"
 EXCAL_PORT_FILE="$EXCALIDRAW_HOME/backend/src/index.ts"
 
-
-# Test for matches
-test_match() {
-if grep -q "$1" "$2" ; then
-    echo "$(basename "$2") - OK..."
-else
-    echo "$(basename "$2"), FAIL..."
-    echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
-    exit
-fi
-}
 # Make sure we can rely on the match strings.
 printf "Testing match strings on config files.\n"
 test_match "$WS_MATCH1" "$WS_CONF"
@@ -100,14 +114,14 @@ sudo -u excalidraw cp .env.development .env.production
 
 # Use documented port to get some sort of standarization.
 if sed -n "/$EXCAL_MATCH1/,/});/p" "$EXCAL_PORT_FILE" |grep -q port: ; then
-    echo "> Update predefined port for metrics to $EXCAL_NEW_PORT\n"
+    echo -e "> Update predefined port for metrics to $EXCAL_NEW_PORT\n"
     sed -i "/$EXCAL_MATCH1/,/});/s|port:.*,|port: $EXCAL_NEW_PORT,|" "$EXCAL_PORT_FILE"
 else
-    echo "> Define new port from default to $EXCAL_NEW_PORT\n"
+    echo -e "> Define new port from default to $EXCAL_NEW_PORT\n"
     sed -i  "/$EXCAL_MATCH1/a \ \ \ \ port: $EXCAL_NEW_PORT," "$EXCAL_PORT_FILE"
 fi
 
-printf "\nInstalling npm backend.\n"
+printf "Installing npm backend.\n"
 sudo -u excalidraw npm install
 sudo -u excalidraw npm run build
 
@@ -142,7 +156,7 @@ else
     sed -i "/$PROS_MATCH3/i \\\n" "$PROSODY_FILE"
 fi
 
-printf "\n# Checking for whitebord setup at $(basename "$MEET_CONF").\n"
+printf "\n# Checking for whitebord setup at %s.\n" "$(basename "$MEET_CONF")"
 if [ -z "$(sed -n '/whiteboard: {/,/},/p' "$MEET_CONF")" ]; then
     echo "> No present configuration on current config.js file"
     sed -i "/$CONFIG_MATCH1/i \\\n" "$MEET_CONF"
@@ -191,3 +205,4 @@ systemctl enable excalidraw.service
 systemctl start excalidraw.service
 
 printwc "${Green}" "\nExcalidraw setup complete!\n"
+restart_services
