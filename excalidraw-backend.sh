@@ -42,6 +42,15 @@ restart_services() {
     restart_jibri
     systemctl restart prosody
 }
+test_match() {
+if grep -q "$1" "$2" ; then
+    echo "$(basename "$2") - OK..."
+else
+    echo "$(basename "$2"), FAIL..."
+    echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
+    exit
+fi
+}
 
 while getopts m: option
 do
@@ -83,17 +92,6 @@ EXCAL_MATCH1="prometheus.metrics(io"
 EXCAL_NEW_PORT="9091"
 EXCAL_PORT_FILE="$EXCALIDRAW_HOME/backend/src/index.ts"
 
-
-# Test for matches
-test_match() {
-if grep -q "$1" "$2" ; then
-    echo "$(basename "$2") - OK..."
-else
-    echo "$(basename "$2"), FAIL..."
-    echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
-    exit
-fi
-}
 # Make sure we can rely on the match strings.
 printf "Testing match strings on config files.\n"
 test_match "$WS_MATCH1" "$WS_CONF"
@@ -158,7 +156,7 @@ else
     sed -i "/$PROS_MATCH3/i \\\n" "$PROSODY_FILE"
 fi
 
-printf "\n# Checking for whitebord setup at $(basename "$MEET_CONF").\n"
+printf "\n# Checking for whitebord setup at %s.\n" "$(basename "$MEET_CONF")"
 if [ -z "$(sed -n '/whiteboard: {/,/},/p' "$MEET_CONF")" ]; then
     echo "> No present configuration on current config.js file"
     sed -i "/$CONFIG_MATCH1/i \\\n" "$MEET_CONF"
