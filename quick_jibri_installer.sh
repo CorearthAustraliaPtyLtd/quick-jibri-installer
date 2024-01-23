@@ -131,6 +131,7 @@ add_prosody_repo() {
             > /etc/apt/sources.list.d/prosody.list
         curl -s https://prosody.im/files/prosody-debian-packages.key \
             > "$PROSODY_GPG_KEY"
+        apt-get update -q2
     fi
 }
 dpkg-compare() {
@@ -317,6 +318,7 @@ else
         > /etc/apt/sources.list.d/jitsi-stable.list
     curl -s https://download.jitsi.org/jitsi-key.gpg.key \
         > "$JITSI_GPG_KEY"
+    apt-get update -q2
     JITSI_REPO="stable"
 fi
 sleep .1
@@ -452,7 +454,7 @@ else
         | gpg --dearmor -o "$NODEJS_GPG_KEY"
     echo "deb [signed-by=$NODEJS_GPG_KEY] https://deb.nodesource.com/node_$NODEJS_VER.x nodistro main" | \
         tee /etc/apt/sources.list.d/nodesource.list
-    apt-get update -yq2
+    apt-get update -q2
     apt-get install -yq2 nodejs
 
     echo "Installing nodejs esprima package..."
