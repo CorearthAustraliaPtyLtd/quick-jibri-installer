@@ -265,6 +265,10 @@ printwc "${Purple}" "========== Enable $NC_DOMAIN for sync client ==========\n"
         echo "$NC_DOMAIN seems to be on place, skipping..."
     fi
 fi
+
+# Final check & upgrade call.
+check_lst_cd
+
 if [ "$JIBRI_NODE" = "yes" ]; then
     restart_jibri
 else
