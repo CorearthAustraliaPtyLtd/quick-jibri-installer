@@ -42,7 +42,9 @@ apt_repo="/etc/apt/sources.list.d"
 ENABLE_BLESSM="TBD"
 G_CHROME=$(apt-cache madison google-chrome-stable|awk '{print$3}'|cut -d. -f1-3)
 CHROMELAB_URL="https://googlechromelabs.github.io/chrome-for-testing"
-CHD_LTST_DWNL=$(curl -s $CHROMELAB_URL/known-good-versions-with-downloads.json | jq -r ".versions[].downloads.chromedriver | select(. != null) | .[].url" | grep linux64 | grep "$G_CHROME" | tail -1)
+CHD_LTST_DWNL=$(curl -s $CHROMELAB_URL/known-good-versions-with-downloads.json | \
+                jq -r ".versions[].downloads.chromedriver | select(. != null) | .[].url" | \
+                grep linux64 | grep "$G_CHROME" | tail -1)
 CHD_LTST=$(awk -F '/' '{print$7}' <<< "$CHD_LTST_DWNL")
 CHD_LTST_2D="$(cut -d "." -f 1,2 <<<  "$CHD_LTST")"
 CHDB="$(whereis chromedriver | awk '{print$2}')"
@@ -123,6 +125,7 @@ update_nodejs_repo() {
         -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
     apt-get install -q2 --only-upgrade <<< printf "${nodejs_package[@]}"
 }
+check_latest_gc() {
 printwc "${Purple}" "Checking for Google Chrome\n"
 if [ -f /usr/bin/google-chrome ]; then
     GOOGL_VER_2D="$(/usr/bin/google-chrome --version|awk '{printf "%.1f\n", $NF}')"
@@ -130,8 +133,11 @@ else
     printwc "${Yellow}" " -> Seems there is no Google Chrome installed\n"
     IS_GLG_CHRM="no"
 fi
+}
+check_latest_gc
 upgrade_cd() {
 if [ -n "$GOOGL_VER_2D" ]; then
+    check_latest_gc
     if version_gt "$GOOGL_VER_2D" "$CHD_VER_2D" ; then
         echo "Upgrading Chromedriver to Google Chromes version"
         wget -q "$CHD_LTST_DWNL" \
