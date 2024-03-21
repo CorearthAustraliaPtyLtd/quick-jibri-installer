@@ -18,6 +18,15 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
+install_ifnot() {
+    if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")" == "1" ]; then
+        echo " $1 is installed, skipping..."
+    else
+        printf "\n---- Installing %s ----" "$1"
+        apt-get -yq2 install "$1"
+    fi
+}
+
 install_aval_package() {
 for i in $1
   do
