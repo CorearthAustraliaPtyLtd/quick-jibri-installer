@@ -1,6 +1,6 @@
 #!/bin/bash
 # JVB2 Node Aggregator
-# SwITNet Ltd © - 2023, https://switnet.net/
+# SwITNet Ltd © - 2024, https://switnet.net/
 # GPLv3 or later.
 
 ### 0_LAST EDITION TIME STAMP ###
