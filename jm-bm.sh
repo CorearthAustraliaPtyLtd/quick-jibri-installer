@@ -27,6 +27,7 @@ BUNDLE_JS="/usr/share/jitsi-meet/libs/app.bundle.min.js"
 #
 JM_IMG_PATH="/usr/share/jitsi-meet/images"
 WTM2_PATH="$JM_IMG_PATH/watermark2.png"
+WTM2_SVG_PATH="$JM_IMG_PATH/watermark2.png"
 FICON_PATH="$JM_IMG_PATH/favicon2.ico"
 REC_ICON_PATH="$JM_IMG_PATH/gnome_record.png"
 #
@@ -36,29 +37,30 @@ PART_USER="Participant"
 LOCAL_USER="me"
 #
 #SEC_ROOM="TBD"
+copy_if_not_there() {
+	if [ ! -f "$1" ]; then
+        cp images/"$(echo $1|xargs basename)" "$1"
+    else
+        echo "$(echo $1|xargs basename) file exists, skipping copying..."
+    fi
+}
 echo '
 #--------------------------------------------------
 # Applying Brandless mode
 #--------------------------------------------------
 '
+
 #Watermark
-if [ ! -f "$WTM2_PATH" ]; then
-    cp images/watermark2.png "$WTM2_PATH"
-else
-    echo "watermark2 file exists, skipping copying..."
-fi
+copy_if_not_there "$WTM2_PATH"
+
+#Watermark svg
+copy_if_not_there "$WTM2_SVG_PATH"
+
 #Favicon
-if [ ! -f "$FICON_PATH" ]; then
-    cp images/favicon2.ico "$FICON_PATH"
-else
-    echo "favicon2 file exists, skipping copying..."
-fi
+copy_if_not_there "$FICON_PATH"
+
 #Local recording icon
-if [ ! -f "$REC_ICON_PATH" ];then
-    cp images/gnome_record.png "$REC_ICON_PATH"
-else
-    echo "recording icon exists, skipping copying..."
-fi
+copy_if_not_there "$REC_ICON_PATH"
 
 #Custom / Remove icons
 sed -i "s|watermark.png|watermark2.png|g" "$CSS_FILE"
@@ -70,6 +72,8 @@ sed -i "s|icon-cloud.png|gnome_record.png|g" "$BUNDLE_JS"
 if ! grep -q ".leftwatermark{display:none" "$CSS_FILE" ; then
     sed -i "s|.leftwatermark{|.leftwatermark{display:none;|" "$CSS_FILE"
 fi
+#Replace App logo
+sed -i "s|// defaultLogoUrl: .*|    defaultLogoUrl: 'images/watermark2.svg',|" "$MEET_CONF"
 
 #Customize room title
 sed -i "s|Jitsi Meet|$APP_NAME|g" "$TITLE_FILE"
