@@ -27,7 +27,7 @@ BUNDLE_JS="/usr/share/jitsi-meet/libs/app.bundle.min.js"
 #
 JM_IMG_PATH="/usr/share/jitsi-meet/images"
 WTM2_PATH="$JM_IMG_PATH/watermark2.png"
-WTM2_SVG_PATH="$JM_IMG_PATH/watermark2.png"
+WTM2_SVG_PATH="$JM_IMG_PATH/watermark2.svg"
 FICON_PATH="$JM_IMG_PATH/favicon2.ico"
 REC_ICON_PATH="$JM_IMG_PATH/gnome_record.png"
 #
@@ -74,6 +74,8 @@ if ! grep -q ".leftwatermark{display:none" "$CSS_FILE" ; then
 fi
 #Replace App logo
 sed -i "s|// defaultLogoUrl: .*|    defaultLogoUrl: 'images/watermark2.svg',|" "$MEET_CONF"
+#Overwrite favicon svg
+cp images/watermark2.svg $JM_IMG_PATH/favicon.svg
 
 #Customize room title
 sed -i "s|Jitsi Meet|$APP_NAME|g" "$TITLE_FILE"
