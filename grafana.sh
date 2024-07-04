@@ -198,7 +198,7 @@ PUT -H "Content-Type: application/json;charset=UTF-8" -d \
   \"oldPassword\": \"admin\",
   \"newPassword\": \"$GRAFANA_PASS\",
   \"confirmNew\": \"$GRAFANA_PASS\"
-}" http://localhost:3000/api/user/password; echo ""
+}" http://127.0.0.1:3000/api/user/password; echo ""
 
 echo "
 # Create InfluxDB datasource
@@ -208,16 +208,16 @@ POST -H 'Content-Type: application/json;charset=UTF-8' -d \
 '{
     "name": "InfluxDB",
     "type": "influxdb",
-    "url": "http://localhost:8086",
+    "url": "http://127.0.0.1:8086",
     "access": "proxy",
     "isDefault": true,
     "database": "jitsi"
-}' http://localhost:3000/api/datasources; echo ""
+}' http://127.0.0.1:3000/api/datasources; echo ""
 
 echo "
 # Add Grafana Dashboard
 "
-grafana_host="http://localhost:3000"
+grafana_host="http://127.0.0.1:3000"
 grafana_cred="admin:$GRAFANA_PASS"
 grafana_datasource="InfluxDB"
 ds=(11969);
