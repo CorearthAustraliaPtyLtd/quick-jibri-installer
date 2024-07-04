@@ -58,6 +58,7 @@ GRAFANA_INI="/etc/grafana/grafana.ini"
 DOMAIN="$(find /etc/prosody/conf.d/ -name \*.lua|awk -F'.cfg' '!/localhost/{print $1}'|xargs basename)"
 WS_CONF="/etc/nginx/sites-available/$DOMAIN.conf"
 WS_MATCH1="# ensure all static content can always be found first"
+WS_MATCH2="upstream prosody {"
 GRAFANA_PASS="$(tr -dc "a-zA-Z0-9#_*=" < /dev/urandom | fold -w 14 | head -n1)"
 
 # Min requirements
@@ -179,10 +180,30 @@ while [ $secs -gt 0 ]; do
 done
 
 if [ -f "$WS_CONF" ]; then
-    sed -i "/$WS_MATCH1/i \ \ \ \ location \~ \^\/(grafana\/|grafana\/login) {" "$WS_CONF"
-    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ \ \ proxy_pass http:\/\/localhost:3000;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ # Proxy Grafana." "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ location ~ ^/(grafana/|grafana/login) {" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_set_header Host \$host;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_pass http://grafana;" "$WS_CONF"
     sed -i "/$WS_MATCH1/i \ \ \ \ }" "$WS_CONF"
     sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ # Proxy Grafana Live WebSocket connections." "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ location /grafana/api/live/ {" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_http_version 1.1;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_set_header Upgrade \$http_upgrade;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_set_header Connection \$connection_upgrade;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_set_header Host \$host;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_pass http://grafana;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ }" "$WS_CONF"
+
+    sed -i "/$WS_MATCH2/i # This is required to proxy Grafana Live WebSocket connections." "$WS_CONF"
+    sed -i "/$WS_MATCH2/i map \$http_upgrade \$connection_upgrade {" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i \ \ default upgrade;" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i \ \ '' close;" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i }" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i upstream grafana {" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i \ \ server localhost:3000;" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i }" "$WS_CONF"
     systemctl restart nginx
 else
     echo "No app configuration done to server file, please report to:
