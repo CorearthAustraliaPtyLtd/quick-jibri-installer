@@ -43,11 +43,22 @@ systemctl enable "$1"
 systemctl restart "$1"
 systemctl status "$1"
 }
+test_match() {
+    if grep -q "$1" "$2" ; then
+        echo "$(basename "$2") - OK..."
+    else
+        echo "$(basename "$2"), FAIL..."
+        echo "Please report this to https://forge.switnet.net/switnet/quick-jibri-installer"
+        exit
+    fi
+}
 MAIN_TEL="/etc/telegraf/telegraf.conf"
 TEL_JIT="/etc/telegraf/telegraf.d/jitsi.conf"
 GRAFANA_INI="/etc/grafana/grafana.ini"
 DOMAIN="$(find /etc/prosody/conf.d/ -name \*.lua|awk -F'.cfg' '!/localhost/{print $1}'|xargs basename)"
 WS_CONF="/etc/nginx/sites-available/$DOMAIN.conf"
+WS_MATCH1="# ensure all static content can always be found first"
+WS_MATCH2="upstream prosody {"
 GRAFANA_PASS="$(tr -dc "a-zA-Z0-9#_*=" < /dev/urandom | fold -w 14 | head -n1)"
 
 # Min requirements
@@ -57,11 +68,17 @@ apt-get install -y gnupg2 \
                    wget \
                    jq
 
+# Make sure we can rely on the match strings.
+printf "> Testing match strings on config files.\n"
+test_match "$WS_MATCH1" "$WS_CONF"
+
 echo "
 # Setup InfluxDB Packages
 "
-curl -s https://repos.influxdata.com/influxdata-archive.key > /etc/apt/trusted.gpg.d/influxdata-archive.key
-echo "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive.key] https://repos.influxdata.com/debian buster stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
+curl -s https://repos.influxdata.com/influxdata-archive.key > \
+    /etc/apt/trusted.gpg.d/influxdata-archive.key
+echo "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive.key] https://repos.influxdata.com/debian buster stable" | \
+    sudo tee /etc/apt/sources.list.d/influxdb.list
 apt-get update && apt-get install influxdb -y
 run_service influxdb
 
@@ -70,7 +87,8 @@ echo "
 "
 curl -s https://apt.grafana.com/gpg-full.key | \
 gpg --dearmor | tee /etc/apt/trusted.gpg.d/grafana-full-key.gpg  >/dev/null
-add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
+echo "deb https://packages.grafana.com/oss/deb stable main" | \
+    sudo tee /etc/apt/sources.list.d/grafana_com_oss_deb.list
 apt-get update && apt-get install grafana -y
 run_service grafana-server
 
@@ -138,11 +156,13 @@ echo '
 # extra options to pass to the JVB daemon
 JVB_OPTS="--apis=rest,xmpp"' >>  /etc/jitsi/videobridge/config
 sed -i "s|TRANSPORT=muc|TRANSPORT=muc,colibri|" /etc/jitsi/videobridge/sip-communicator.properties
+# Enable videobridge REST API
+hocon -f /etc/jitsi/videobridge/jvb.conf set videobridge.apis.rest.enabled true
 systemctl restart jitsi-videobridge2
 
 echo -e "\n# Setup Grafana nginx domain\n"
 sed -i "s|;protocol =.*|protocol = http|" $GRAFANA_INI
-sed -i "s|;http_addr =.*|http_addr = localhost|" $GRAFANA_INI
+sed -i "s|;http_addr =.*|http_addr = 127.0.0.1|" $GRAFANA_INI
 sed -i "s|;http_port =.*|http_port = 3000|" $GRAFANA_INI
 sed -i "s|;domain =.*|domain = $DOMAIN|" $GRAFANA_INI
 sed -i "s|;enforce_domain =.*|enforce_domain = false|" $GRAFANA_INI
@@ -160,10 +180,30 @@ while [ $secs -gt 0 ]; do
 done
 
 if [ -f "$WS_CONF" ]; then
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ location \~ \^\/(grafana\/|grafana\/login) {" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ \ \ \ \ proxy_pass http:\/\/localhost:3000;" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ }" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \\\n" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ # Proxy Grafana." "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ location ~ ^/(grafana/|grafana/login) {" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_set_header Host \$host;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_pass http://grafana;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ }" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ # Proxy Grafana Live WebSocket connections." "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ location /grafana/api/live/ {" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_http_version 1.1;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_set_header Upgrade \$http_upgrade;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_set_header Connection \$connection_upgrade;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_set_header Host \$host;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ proxy_pass http://grafana;" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \ \ \ \ }" "$WS_CONF"
+
+    sed -i "/$WS_MATCH2/i # This is required to proxy Grafana Live WebSocket connections." "$WS_CONF"
+    sed -i "/$WS_MATCH2/i map \$http_upgrade \$connection_upgrade {" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i \ \ default upgrade;" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i \ \ '' close;" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i }" "$WS_CONF"
+    sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i upstream grafana {" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i \ \ server localhost:3000;" "$WS_CONF"
+    sed -i "/$WS_MATCH2/i }" "$WS_CONF"
     systemctl restart nginx
 else
     echo "No app configuration done to server file, please report to:
@@ -179,7 +219,7 @@ PUT -H "Content-Type: application/json;charset=UTF-8" -d \
   \"oldPassword\": \"admin\",
   \"newPassword\": \"$GRAFANA_PASS\",
   \"confirmNew\": \"$GRAFANA_PASS\"
-}" http://localhost:3000/api/user/password; echo ""
+}" http://127.0.0.1:3000/api/user/password; echo ""
 
 echo "
 # Create InfluxDB datasource
@@ -189,16 +229,16 @@ POST -H 'Content-Type: application/json;charset=UTF-8' -d \
 '{
     "name": "InfluxDB",
     "type": "influxdb",
-    "url": "http://localhost:8086",
+    "url": "http://127.0.0.1:8086",
     "access": "proxy",
     "isDefault": true,
     "database": "jitsi"
-}' http://localhost:3000/api/datasources; echo ""
+}' http://127.0.0.1:3000/api/datasources; echo ""
 
 echo "
 # Add Grafana Dashboard
 "
-grafana_host="http://localhost:3000"
+grafana_host="http://127.0.0.1:3000"
 grafana_cred="admin:$GRAFANA_PASS"
 grafana_datasource="InfluxDB"
 ds=(11969);

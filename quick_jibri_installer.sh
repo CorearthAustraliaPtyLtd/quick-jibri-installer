@@ -567,18 +567,6 @@ do
   fi
 done
 sleep .1
-#Language
-echo "## Setting up Jitsi Meet language ##
-You can define the language, for a complete list of the supported languages
-
-See here:
-https://github.com/jitsi/jitsi-meet/blob/master/lang/languages.json"
-printf "Jitsi Meet web interface will be set to use such language.\n\n"
-sleep .1
-read -p "Please set your language (Press enter to default to 'en'):$NL" -r JB_LANG
-sleep .1
-printf "\nWe'll take a minute to localize some UI excerpts if you need.\n\n"
-sleep .1
 #Participant
 printf "> Do you want to translate 'Participant' to your own language?\n"
 sleep .1
@@ -876,18 +864,17 @@ sed -i "s|conference.$DOMAIN|internal.auth.$DOMAIN|" "$MEET_CONF"
 sed -i "s|// recordingService:|recordingService:|" "$MEET_CONF"
 sed -i "/recordingService/,/hideStorageWarning/s|//     enabled: false,|       enabled: true,|" "$MEET_CONF"
 sed -i "/hideStorageWarning: false/,/Local recording configuration/s|// },|},|" "$MEET_CONF"
-sed -i "s|// liveStreamingEnabled: false,|liveStreamingEnabled: true,\\
-\\
-    hiddenDomain: \'recorder.$DOMAIN\',|" "$MEET_CONF"
+sed -i "/fileRecordingsServiceEnabled: false,/a \\
+    hiddenDomain: \'recorder.$DOMAIN\'," "$MEET_CONF"
 
-#Setup main language
-if [ -z "$JB_LANG" ] || [ "$JB_LANG" = "en" ]; then
-    echo "Leaving English (en) as default language..."
-    sed -i "s|// defaultLanguage: 'en',|defaultLanguage: 'en',|" "$MEET_CONF"
-else
-    echo "Changing default language to: $JB_LANG"
-    sed -i "s|// defaultLanguage: 'en',|defaultLanguage: \'$JB_LANG\',|" "$MEET_CONF"
-fi
+##Setup main language
+#if [ -z "$JB_LANG" ] || [ "$JB_LANG" = "en" ]; then
+    #echo "Leaving English (en) as default language..."
+    #sed -i "s|// defaultLanguage: 'en',|defaultLanguage: 'en',|" "$MEET_CONF"
+#else
+    #echo "Changing default language to: $JB_LANG"
+    #sed -i "s|// defaultLanguage: 'en',|defaultLanguage: \'$JB_LANG\',|" "$MEET_CONF"
+#fi
 
 # Recording directory
 if [ ! -d "$DIR_RECORD" ]; then
@@ -1197,9 +1184,11 @@ sed -i "s|// startAudioMuted: 10,|startAudioMuted: 1,|" "$MEET_CONF"
 
 #Disable/enable welcome page
 if [ "$ENABLE_WELCP" = "yes" ]; then
-    sed -i "s|.*enableWelcomePage:.*|    enableWelcomePage: false,|" "$MEET_CONF"
+    sed -i "/ welcomePage: {/,/},/s|// ||" "$MEET_CONF"
+    sed -i "/ welcomePage: {/,/},/s|disabled: .*,|disabled: true,|" "$MEET_CONF"
 elif [ "$ENABLE_WELCP" = "no" ]; then
-    sed -i "s|.*enableWelcomePage:.*|    enableWelcomePage: true,|" "$MEET_CONF"
+    sed -i "/ welcomePage: {/,/},/s|// ||" "$MEET_CONF"
+    sed -i "/ welcomePage: {/,/},/s|disabled: .*,|disabled: false,|" "$MEET_CONF"
 fi
 #Enable close page
 if [ "$ENABLE_CLOCP" = "yes" ]; then

@@ -30,7 +30,7 @@ echo '
 ########################################################################
                     by Software, IT & Networks Ltd
 '
-
+FORGE_REPO="https://forge.switnet.net/switnet/quick-jibri-installer"
 check_apt_policy() {
 apt-cache policy 2>/dev/null| awk "/$1/{print \$3}" | awk -F '/' 'NR==1{print$2}'
 }
@@ -42,6 +42,16 @@ if [ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed")"
         apt-get -yq2 install "$1"
 fi
 }
+# Test for matches
+test_match() {
+if grep -q "$1" "$2" ; then
+    echo "$(basename "$2") - OK..."
+else
+    echo "$(basename "$2"), FAIL..."
+    echo "Please report this to $FORGE_REPO"
+    exit
+fi
+}
 DOMAIN="$(find /etc/prosody/conf.d/ -name \*.lua|awk -F'.cfg' '!/localhost/{print $1}'|xargs basename)"
 MEET_CONF="/etc/jitsi/meet/$DOMAIN-config.js"
 WS_CONF="/etc/nginx/sites-available/$DOMAIN.conf"
@@ -50,6 +60,7 @@ ETHERPAD_DB_USER="dockerpad"
 ETHERPAD_DB_NAME="etherpad"
 ETHERPAD_DB_PASS="$(tr -dc "a-zA-Z0-9#*=" < /dev/urandom | fold -w 10 | head -n1)"
 DOCKER_CE_REPO="$(check_apt_policy docker)"
+WS_CONF_MATCH1="# ensure all static content can always be found first"
 
 echo "Add Docker repo"
 if [ "$DOCKER_CE_REPO" = "stable" ]; then
@@ -105,14 +116,14 @@ if [ "$(grep -c etherpad "$WS_CONF")" != 0 ]; then
     echo "> Webserver seems configured, skipping..."
 elif [ -f "$WS_CONF" ]; then
     echo "> Setting up webserver configuration file..."
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ #Etherpad block" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ location \^\~\ \/etherpad\/ {" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ \ \ \ \ proxy_pass http:\/\/localhost:9001\/;" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ \ \ \ \ proxy_set_header X-Forwarded-For \$remote_addr;" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ \ \ \ \ proxy_buffering off;" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ \ \ \ \ proxy_set_header       Host \$host;" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \ \ \ \ }" "$WS_CONF"
-    sed -i "/# ensure all static content can always be found first/i \\\n" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ #Etherpad block" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ location \^\~\ \/etherpad\/ {" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_pass http:\/\/localhost:9001\/;" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_set_header X-Forwarded-For \$remote_addr;" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_buffering off;" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_set_header       Host \$host;" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ }" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \\\n" "$WS_CONF"
 else
     echo "> No etherpad config done to server file, please report to:
     -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"

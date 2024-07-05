@@ -59,7 +59,7 @@ DIR_RECORD="$(awk  -F '"' '/RECORDING/{print$2}'  /home/jibri/finalize_recording
 REDIS_CONF="/etc/redis/redis.conf"
 JITSI_MEET_PROXY="/etc/nginx/modules-enabled/60-jitsi-meet.conf"
 [ -f "$JITSI_MEET_PROXY" ] && PREAD_PROXY=$(grep -nr "preread_server_name" "$JITSI_MEET_PROXY" | cut -d ":" -f1)
-PUBLIC_IP="$(dig +short myip.opendns.com @resolver1.opendns.com)"
+PUBLIC_IP="$(dig -4 +short myip.opendns.com @resolver1.opendns.com)"
 ISO3166_CODE=TBD
 NL="$(printf '\n  ')"
 
