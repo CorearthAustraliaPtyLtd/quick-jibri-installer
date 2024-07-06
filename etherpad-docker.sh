@@ -66,7 +66,8 @@ echo "Add Docker repo"
 if [ "$DOCKER_CE_REPO" = "stable" ]; then
     echo "Docker repository already installed"
 else
-    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker-ce.list
+    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > \
+        /etc/apt/sources.list.d/docker-ce.list
     wget -qO - https://download.docker.com/linux/ubuntu/gpg | \
     gpg --dearmor | tee /etc/apt/trusted.gpg.d/docker-gpg-key.gpg  >/dev/null
     apt -q2 update
@@ -74,6 +75,9 @@ fi
 
 read -p "Set your etherpad docker admin password: " -r ETHERPAD_ADMIN_PASS
 
+# Make sure we can rely on the match strings.
+printf "> Testing match strings on config files.\n"
+test_match "$WS_MATCH1" "$WS_CONF"
 
 # Install required packages
 install_ifnot docker-ce

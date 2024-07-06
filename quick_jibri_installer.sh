@@ -538,19 +538,20 @@ JB_NAME="Jibri Sessions"
 LE_RENEW_LOG="/var/log/letsencrypt/renew.log"
 MOD_LISTU="https://prosody.im/files/mod_listusers.lua"
 MOD_LIST_FILE="/usr/lib/prosody/modules/mod_listusers.lua"
-ENABLE_SA="yes"
 MJS_RAND_TAIL="$(tr -dc "a-zA-Z0-9" < /dev/urandom | fold -w 4 | head -n1)"
 MJS_USER="jbsync_$MJS_RAND_TAIL"
 MJS_USER_PASS="$(tr -dc "a-zA-Z0-9#_*=" < /dev/urandom | fold -w 32 | head -n1)"
 FQDN_HOST="fqdn"
 JIBRI_XORG_CONF="/etc/jitsi/jibri/xorg-video-dummy.conf"
 WS_MATCH1="# ensure all static content can always be found first"
+WS_MATCH2="external_api.js"
 MEET_MATCH1="disable simulcast support."
 #GC_SDK_REL_FILE="http://packages.cloud.google.com/apt/dists/cloud-sdk-$(lsb_release -sc)/Release"
 
 # Make sure we can rely on the match strings.
 printf "> Testing match strings on config files.\n"
 test_match "$WS_MATCH1" "$WS_CONF"
+test_match "$WS_MATCH2" "$WS_CONF"
 test_match "$MEET_MATCH1" "$MEET_CONF"
 
 # Rename hostname for jitsi server
@@ -867,15 +868,6 @@ sed -i "/hideStorageWarning: false/,/Local recording configuration/s|// },|},|" 
 sed -i "/fileRecordingsServiceEnabled: false,/a \\
     hiddenDomain: \'recorder.$DOMAIN\'," "$MEET_CONF"
 
-##Setup main language
-#if [ -z "$JB_LANG" ] || [ "$JB_LANG" = "en" ]; then
-    #echo "Leaving English (en) as default language..."
-    #sed -i "s|// defaultLanguage: 'en',|defaultLanguage: 'en',|" "$MEET_CONF"
-#else
-    #echo "Changing default language to: $JB_LANG"
-    #sed -i "s|// defaultLanguage: 'en',|defaultLanguage: \'$JB_LANG\',|" "$MEET_CONF"
-#fi
-
 # Recording directory
 if [ ! -d "$DIR_RECORD" ]; then
     mkdir "$DIR_RECORD"
@@ -906,117 +898,15 @@ chmod +x "$REC_DIR"
 
 ## New Jibri Config (2020)
 mv "$JIBRI_CONF" ${JIBRI_CONF}-dpkg-file
-cat << NEW_CONF > "$JIBRI_CONF"
-// New XMPP environment config.
-jibri {
-    streaming {
-        // A list of regex patterns for allowed RTMP URLs.  The RTMP URL used
-        // when starting a stream must match at least one of the patterns in
-        // this list.
-        rtmp-allow-list = [
-          // By default, all services are allowed
-          ".*"
-        ]
-    }
-    ffmpeg {
-        resolution = $JIBRI_RES_CONF
-    }
-    chrome {
-        // The flags which will be passed to chromium when launching
-        flags = [
-          "--use-fake-ui-for-media-stream",
-          "--start-maximized",
-          "--kiosk",
-          "--enabled",
-          "--disable-infobars",
-          "--autoplay-policy=no-user-gesture-required",
-          "--ignore-certificate-errors",
-          "--disable-dev-shm-usage"
-        ]
-    }
-    stats {
-        enable-stats-d = true
-    }
-    call-status-checks {
-        // If all clients have their audio and video muted and if Jibri does not
-        // detect any data stream (audio or video) comming in, it will stop
-        // recording after NO_MEDIA_TIMEOUT expires.
-        no-media-timeout = 30 seconds
-
-        // If all clients have their audio and video muted, Jibri consideres this
-        // as an empty call and stops the recording after ALL_MUTED_TIMEOUT expires.
-        all-muted-timeout = 10 minutes
-
-        // When detecting if a call is empty, Jibri takes into consideration for how
-        // long the call has been empty already. If it has been empty for more than
-        // DEFAULT_CALL_EMPTY_TIMEOUT, it will consider it empty and stop the recording.
-        default-call-empty-timeout = 30 seconds
-    }
-    recording {
-         recordings-directory = "$DIR_RECORD"
-         finalize-script = "$REC_DIR"
-    }
-    api {
-        xmpp {
-            environments = [
-                {
-                // A user-friendly name for this environment
-                name = "$JB_NAME"
-
-                // A list of XMPP server hosts to which we'll connect
-                xmpp-server-hosts = [ "$DOMAIN" ]
-
-                // The base XMPP domain
-                xmpp-domain = "$DOMAIN"
-
-                // The MUC we'll join to announce our presence for
-                // recording and streaming services
-                control-muc {
-                    domain = "internal.auth.$DOMAIN"
-                    room-name = "$JibriBrewery"
-                    nickname = "Live"
-                }
-
-                // The login information for the control MUC
-                control-login {
-                    domain = "auth.$DOMAIN"
-                    username = "jibri"
-                    password = "$JB_AUTH_PASS"
-                }
-
-                // An (optional) MUC configuration where we'll
-                // join to announce SIP gateway services
-            //    sip-control-muc {
-            //        domain = "domain"
-            //        room-name = "room-name"
-            //        nickname = "nickname"
-            //    }
-
-                // The login information the selenium web client will use
-                call-login {
-                    domain = "recorder.$DOMAIN"
-                    username = "recorder"
-                    password = "$JB_REC_PASS"
-                }
-
-                // The value we'll strip from the room JID domain to derive
-                // the call URL
-                strip-from-room-domain = "conference."
-
-                // How long Jibri sessions will be allowed to last before
-                // they are stopped.  A value of 0 allows them to go on
-                // indefinitely
-                usage-timeout = 0 hour
-
-                // Whether or not we'll automatically trust any cert on
-                // this XMPP domain
-                trust-all-xmpp-certs = true
-                }
-            ]
-        }
-    }
-}
-NEW_CONF
+cp files/jibri.conf "$JIBRI_CONF"
+sed -i "s|JIBRI_RES_CONF|$JIBRI_RES_CONF|g" "$JIBRI_CONF"
+sed -i "s|DIR_RECORD|$DIR_RECORD|g" "$JIBRI_CONF"
+sed -i "s|REC_DIR|$REC_DIR|g" "$JIBRI_CONF"
+sed -i "s|JB_NAME|$JB_NAME|g" "$JIBRI_CONF"
+sed -i "s|DOMAIN|$DOMAIN|g" "$JIBRI_CONF"
+sed -i "s|JibriBrewery|$JibriBrewery|g" "$JIBRI_CONF"
+sed -i "s|JB_AUTH_PASS|$JB_AUTH_PASS|g" "$JIBRI_CONF"
+sed -i "s|JB_REC_PASS|$JB_REC_PASS|g" "$JIBRI_CONF"
 
 #Jibri xorg resolution
 sed -i "s|[[:space:]]Virtual .*|Virtual $JIBRI_RES_XORG_CONF|" "$JIBRI_XORG_CONF"
@@ -1091,28 +981,6 @@ sed -i "s|MJS_USER=.*|MJS_USER=\"$MJS_USER\"|" add-jvb2-node.sh
 sed -i "s|MJS_USER_PASS=.*|MJS_USER_PASS=\"$MJS_USER_PASS\"|" add-jvb2-node.sh
 ##--
 
-#Tune webserver for Jitsi App control
-if [ -f "$WS_CONF" ]; then
-    sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
-    sed -i "/$WS_MATCH1/i \ \ \ \ location = \/external_api.min.js {" "$WS_CONF"
-    sed -i "/$WS_MATCH1/i \ \ \ \ \ \ \ \ alias \/usr\/share\/jitsi-meet\/libs\/external_api.min.js;" "$WS_CONF"
-    sed -i "/$WS_MATCH1/i \ \ \ \ }" "$WS_CONF"
-    sed -i "/$WS_MATCH1/i \\\n" "$WS_CONF"
-    systemctl reload nginx
-else
-    echo "No app configuration done to server file, please report to:"
-    echo "  -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
-fi
-#Static avatar
-if [ "$ENABLE_SA" = "yes" ] && [ -f "$WS_CONF" ]; then
-    cp images/avatar2.png /usr/share/jitsi-meet/images/
-    sed -i "/location \/external_api.min.js/i \ \ \ \ location \~ \^\/avatar\/\(.\*\)\\\.png {" "$WS_CONF"
-    sed -i "/location \/external_api.min.js/i \ \ \ \ \ \ \ \ alias /usr/share/jitsi-meet/images/avatar2.png;" "$WS_CONF"
-    sed -i "/location \/external_api.min.js/i \ \ \ \ }\\
-\ " "$WS_CONF"
-    sed -i "/RANDOM_AVATAR_URL_PREFIX/ s|false|\'https://$DOMAIN/avatar/\'|" "$INT_CONF"
-    sed -i "/RANDOM_AVATAR_URL_SUFFIX/ s|false|\'.png\'|" "$INT_CONF"
-fi
 #nginx -tlsv1/1.1
 if [ "$DROP_TLS1" = "yes" ];then
     printf "\nDropping TLSv1/1.1\n\n"
