@@ -122,10 +122,14 @@ elif [ -f "$WS_CONF" ]; then
     echo "> Setting up webserver configuration file..."
     sed -i "/$WS_CONF_MATCH1/i \ \ \ \ #Etherpad block" "$WS_CONF"
     sed -i "/$WS_CONF_MATCH1/i \ \ \ \ location \^\~\ \/etherpad\/ {" "$WS_CONF"
-    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_pass http:\/\/localhost:9001\/;" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_http_version 1.1;" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_set_header Upgrade \$http_upgrade;" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_set_header Connection \$connection_upgrade;" "$WS_CONF"
     sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_set_header X-Forwarded-For \$remote_addr;" "$WS_CONF"
     sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_buffering off;" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_redirect off;" "$WS_CONF"
     sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_set_header       Host \$host;" "$WS_CONF"
+    sed -i "/$WS_CONF_MATCH1/i \ \ \ \ \ \ \ \ proxy_pass http:\/\/localhost:9001\/;" "$WS_CONF"
     sed -i "/$WS_CONF_MATCH1/i \ \ \ \ }" "$WS_CONF"
     sed -i "/$WS_CONF_MATCH1/i \\\n" "$WS_CONF"
 else
@@ -138,7 +142,7 @@ if [ "$(grep -c "etherpad_base" "$WS_CONF")" != 0 ]; then
     echo -e "> $MEET_CONF seems configured, skipping...\n"
 else
     echo -e "> Setting etherpad domain at $MEET_CONF...\n"
-    sed -i "/ openSharedDocumentOnJoin:/a\ \ \ \ etherpad_base: \'https://$DOMAIN/etherpad/p/\'," "$MEET_CONF"
+    sed -i "s|// etherpad_base: .*|etherpad_base: \'https://$DOMAIN/etherpad/p/\',|" "$MEET_CONF"
 fi
 
 echo "> Checking nginx configuration..."

@@ -861,12 +861,19 @@ BREWERY
 
 # Jibri tweaks for /etc/jitsi/meet/$DOMAIN-config.js
 sed -i "s|conference.$DOMAIN|internal.auth.$DOMAIN|" "$MEET_CONF"
-#New recording implementation.
+
+#Enable recording by default.
 sed -i "s|// recordingService:|recordingService:|" "$MEET_CONF"
-sed -i "/recordingService/,/hideStorageWarning/s|//     enabled: false,|       enabled: true,|" "$MEET_CONF"
-sed -i "/hideStorageWarning: false/,/Local recording configuration/s|// },|},|" "$MEET_CONF"
+sed -i "/recordingService/,/hideStorageWarning/s|//     enabled: false,|    enabled: true,|" "$MEET_CONF"
+sed -i "/hideStorageWarning: false/,/}/s|// },|},|" "$MEET_CONF"
 sed -i "/fileRecordingsServiceEnabled: false,/a \\
     hiddenDomain: \'recorder.$DOMAIN\'," "$MEET_CONF"
+
+#Enable livestreaming by default.
+sed -i "s|// liveStreaming:|liveStreaming:|" "$MEET_CONF"
+sed -i "/liveStreaming:/,/helpLink:/s|//     enabled: false,|    enabled: true,|" "$MEET_CONF"
+sed -i "s|//    helpLink:|   helpLink:|" "$MEET_CONF"
+sed -i "/helpLink:/,/}/s|// },|},|" "$MEET_CONF"
 
 # Recording directory
 if [ ! -d "$DIR_RECORD" ]; then
