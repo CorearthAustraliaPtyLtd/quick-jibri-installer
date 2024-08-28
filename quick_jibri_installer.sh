@@ -866,6 +866,7 @@ sed -i "s|conference.$DOMAIN|internal.auth.$DOMAIN|" "$MEET_CONF"
 sed -i "s|// recordingService:|recordingService:|" "$MEET_CONF"
 sed -i "/recordingService/,/hideStorageWarning/s|//     enabled: false,|    enabled: true,|" "$MEET_CONF"
 sed -i "/hideStorageWarning: false/,/}/s|// },|},|" "$MEET_CONF"
+#Prepare hidden domain for jibri/jigasi silent users.
 sed -i "/fileRecordingsServiceEnabled: false,/a \\
     hiddenDomain: \'recorder.$DOMAIN\'," "$MEET_CONF"
 
@@ -893,8 +894,8 @@ echo "or storage provider, etc.) in this script" >> /tmp/finalize.out
 
 chmod -R 770 \$RECORDINGS_DIR
 
-LJF_PATH="\$(find \$RECORDINGS_DIR -exec stat --printf="%Y\t%n\n" {} \; | sort -n -r|awk '{print\$2}'| grep -v "meta\|-" | head -n1)"
-NJF_NAME="\$(find \$LJF_PATH |grep -e "-"|sed "s|\$LJF_PATH/||"|cut -d "." -f1)"
+LJF_PATH="\$(find \$RECORDINGS_DIR -exec stat --printf="%Y\t%n\n" {} \; | sort -nr|sed 1d|awk '{print\$2}'| grep -v "meta\|_" | head -n1)"
+NJF_NAME="\$(find \$LJF_PATH |grep "mp4"|sed "s|\$LJF_PATH/||"|cut -d "." -f1)"
 NJF_PATH="\$RECORDINGS_DIR/\$NJF_NAME"
 mv \$LJF_PATH \$NJF_PATH
 
