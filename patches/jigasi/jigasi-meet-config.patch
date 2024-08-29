@@ -1,0 +1,40 @@
+# Quick Jigasi Installer with VOSK backend - *buntu (LTS) based systems.
+# SwITNet Ltd © - 2024, https://switnet.net/
+# GPLv3 or later.
+
+Enable transcription on jitsi meet config.js file.
+
+diff --git a/etc/jitsi/meet/${DOMAIN}-config.js b/etc/jitsi/meet/${DOMAIN}-config.js
+index f412891..f704157 100644
+--- a/etc/jitsi/meet/${DOMAIN}-config.js
++++ b/etc/jitsi/meet/${DOMAIN}-config.js
+@@ -407,9 +407,9 @@ var config = {
+     // autoCaptionOnRecord: false,
+ 
+     // Transcription options.
+-    // transcription: {
++    transcription: {
+     //     // Whether the feature should be enabled or not.
+-    //     enabled: false,
++        enabled: true,
+ 
+     //     // Translation languages.
+     //     // Available languages can be found in
+@@ -424,7 +424,7 @@ var config = {
+     //     // detected based on the environment, e.g. if the app is opened in a chrome instance which
+     //     // is using french as its default language then transcriptions for that participant will be in french.
+     //     // Defaults to true.
+-    //     useAppLanguage: true,
++        useAppLanguage: true,
+ 
+     //     // Transcriber language. This settings will only work if "useAppLanguage"
+     //     // is explicitly set to false.
+@@ -434,7 +434,7 @@ var config = {
+ 
+     //     // Enables automatic turning on transcribing when recording is started
+     //     autoTranscribeOnRecord: false,
+-    // },
++    },
+ 
+     // Misc
+ 

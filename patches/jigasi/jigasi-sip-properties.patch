@@ -1,0 +1,80 @@
+# Quick Jigasi Installer with VOSK backend - *buntu (LTS) based systems.
+# SwITNet Ltd © - 2024, https://switnet.net/
+# GPLv3 or later.
+
+Modify sip-communicator.properties to run Jigasi along with VOSK Models.
+
+diff --git a/etc/jitsi/jigasi/sip-communicator.properties b/etc/jitsi/jigasi/sip-communicator.properties
+index 7a8d0f3..ae5369a 100644
+--- a/etc/jitsi/jigasi/sip-communicator.properties
++++ b/etc/jitsi/jigasi/sip-communicator.properties
+@@ -165,12 +165,12 @@ org.jitsi.jigasi.xmpp.acc.USE_DEFAULT_STUN_SERVER=false
+ 
+ # If you want jigasi to perform authenticated login instead of anonymous login
+ # to the XMPP server, you can set the following properties.
+-# org.jitsi.jigasi.xmpp.acc.USER_ID=SOME_USER@SOME_DOMAIN
+-# org.jitsi.jigasi.xmpp.acc.PASS=SOME_PASS
+-# org.jitsi.jigasi.xmpp.acc.ANONYMOUS_AUTH=false
++org.jitsi.jigasi.xmpp.acc.USER_ID=transcriber@recorder.${DOMAIN}
++org.jitsi.jigasi.xmpp.acc.PASS=${JIG_TRANSC_PASWD}
++org.jitsi.jigasi.xmpp.acc.ANONYMOUS_AUTH=false
+ 
+ # To fix SSL/TLS required by client but not supported by server
+-#org.jitsi.jigasi.xmpp.acc.ALLOW_NON_SECURE=true
++org.jitsi.jigasi.xmpp.acc.ALLOW_NON_SECURE=true
+ 
+ # Can be used in combination with jitsi-meet module mod_auth_jitsi-shared-secret
+ # To have jigasi use a random username on every call
+@@ -187,7 +187,7 @@ org.jitsi.jigasi.xmpp.acc.USE_DEFAULT_STUN_SERVER=false
+ # Activate this property if you are using self-signed certificates or other
+ # type of non-trusted certicates. In this mode your service trust in the
+ # remote certificates always.
+-# net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED=true
++net.java.sip.communicator.service.gui.ALWAYS_TRUST_MODE_ENABLED=true
+ 
+ # Enable this property to be able to shutdown gracefully jigasi using
+ # a rest command
+@@ -196,31 +196,31 @@ org.jitsi.jigasi.xmpp.acc.USE_DEFAULT_STUN_SERVER=false
+ # Options regarding Transcription. Read the README for a detailed description
+ # about each property
+ 
+-#org.jitsi.jigasi.ENABLE_TRANSCRIPTION=false
+-#org.jitsi.jigasi.ENABLE_SIP=true
++org.jitsi.jigasi.ENABLE_TRANSCRIPTION=true
++org.jitsi.jigasi.ENABLE_SIP=false
+ 
+ # whether to use the more expensive, but better performing
+ # "video" model when doing transcription
+ # org.jitsi.jigasi.transcription.USE_VIDEO_MODEL = false
+ 
+ # delivering final transcript
+-# org.jitsi.jigasi.transcription.DIRECTORY=/var/lib/jigasi/transcripts
+-# org.jitsi.jigasi.transcription.BASE_URL=http://localhost/
+-# org.jitsi.jigasi.transcription.jetty.port=-1
+-# org.jitsi.jigasi.transcription.ADVERTISE_URL=false
++org.jitsi.jigasi.transcription.DIRECTORY=/var/lib/jigasi/transcripts
++org.jitsi.jigasi.transcription.BASE_URL=http://localhost/
++org.jitsi.jigasi.transcription.jetty.port=-1
++org.jitsi.jigasi.transcription.ADVERTISE_URL=false
+ 
+ # save formats
+-# org.jitsi.jigasi.transcription.SAVE_JSON=false
+-# org.jitsi.jigasi.transcription.SAVE_TXT=true
++org.jitsi.jigasi.transcription.SAVE_JSON=false
++org.jitsi.jigasi.transcription.SAVE_TXT=true
+ 
+ # send formats
+-# org.jitsi.jigasi.transcription.SEND_JSON=true
+-# org.jitsi.jigasi.transcription.SEND_TXT=false
++org.jitsi.jigasi.transcription.SEND_JSON=true
++org.jitsi.jigasi.transcription.SEND_TXT=false
+ 
+ # Vosk server
+-# org.jitsi.jigasi.transcription.customService=org.jitsi.jigasi.transcription.VoskTranscriptionService
++org.jitsi.jigasi.transcription.customService=org.jitsi.jigasi.transcription.VoskTranscriptionService
+ # org.jitsi.jigasi.transcription.vosk.websocket_url={"en": "ws://localhost:2700", "fr": "ws://localhost:2710"}
+-# org.jitsi.jigasi.transcription.vosk.websocket_url=ws://localhost:2700
++org.jitsi.jigasi.transcription.vosk.websocket_url=ws://localhost:2700
+ 
+ # Whisper live transcription server
+ # org.jitsi.jigasi.transcription.customService=org.jitsi.jigasi.transcription.WhisperTranscriptionService

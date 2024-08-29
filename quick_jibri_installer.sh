@@ -546,7 +546,6 @@ JIBRI_XORG_CONF="/etc/jitsi/jibri/xorg-video-dummy.conf"
 WS_MATCH1="# ensure all static content can always be found first"
 WS_MATCH2="external_api.js"
 MEET_MATCH1="disable simulcast support."
-#GC_SDK_REL_FILE="http://packages.cloud.google.com/apt/dists/cloud-sdk-$(lsb_release -sc)/Release"
 
 # Make sure we can rely on the match strings.
 printf "> Testing match strings on config files.\n"
@@ -700,24 +699,16 @@ do
 done
 sleep .1
 ##Jigasi
-#if [ "$(curl -s -o /dev/null -w "%{http_code}" "$GC_SDK_REL_FILE" )" == "404" ]; then
-    #printf "> Sorry Google SDK doesn't have support yet for %s,
-    #thus, Jigasi Transcript can't be enable.\n\n" "$(lsb_release -sd)"
-#elif [ "$(curl -s -o /dev/null -w "%{http_code}" "$GC_SDK_REL_FILE" )" == "200" ]; then
-    #while [ "$ENABLE_TRANSCRIPT" != "yes" ] && [ "$ENABLE_TRANSCRIPT" != "no" ]
-    #do
-        #read -p "> Do you want to setup Jigasi Transcription: (yes or no)
+while [ "$ENABLE_TRANSCRIPT" != "yes" ] && [ "$ENABLE_TRANSCRIPT" != "no" ]
+do
+    read -p "> Do you want to setup Jigasi Transcription: (yes or no)
 #( Please check requirements at: https://forge.switnet.net/switnet/quick-jibri-installer )$NL" -r ENABLE_TRANSCRIPT
-        #if [ "$ENABLE_TRANSCRIPT" = "no" ]; then
-            #printf " - Jigasi Transcription won't be enabled.\n\n"
-        #elif [ "$ENABLE_TRANSCRIPT" = "yes" ]; then
-            #printf " - Jigasi Transcription will be enabled.\n\n"
-        #fi
-    #done
-#else
-    #echo "No valid option for Jigasi. Please report this to
-#https://forge.switnet.net/switnet/quick-jibri-installer/issues"
-#fi
+    if [ "$ENABLE_TRANSCRIPT" = "no" ]; then
+        printf " - Jigasi Transcription won't be enabled.\n\n"
+    elif [ "$ENABLE_TRANSCRIPT" = "yes" ]; then
+        printf " - Jigasi Transcription will be enabled.\n\n"
+    fi
+done
 sleep .1
 #Grafana
 while [ "$ENABLE_GRAFANA_DSH" != "yes" ] && [ "$ENABLE_GRAFANA_DSH" != "no" ]
@@ -1173,7 +1164,16 @@ if [ "$ENABLE_NC_ACCESS" = "yes" ]; then
     fi
 fi
 sleep .1
-
+#Jigasi w/VOSK backend.
+if [ "$ENABLE_TRANSCRIPT" = "yes" ]; then
+    printf "\nJigasi with VOSK backend will be enabled."
+    if [ "$MODE" = "debug" ]; then
+        bash "$PWD"/jigasi-vosk-backend.sh -m debug
+    else
+        bash "$PWD"/jigasi-vosk-backend.sh
+    fi
+fi
+sleep .1
 #Grafana Dashboard
 if [ "$ENABLE_GRAFANA_DSH" = "yes" ]; then
     printf "\nGrafana Dashboard will be enabled."
