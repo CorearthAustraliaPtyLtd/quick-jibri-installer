@@ -546,6 +546,7 @@ JIBRI_XORG_CONF="/etc/jitsi/jibri/xorg-video-dummy.conf"
 WS_MATCH1="# ensure all static content can always be found first"
 WS_MATCH2="external_api.js"
 MEET_MATCH1="disable simulcast support."
+export DOMAIN
 
 # Make sure we can rely on the match strings.
 printf "> Testing match strings on config files.\n"
@@ -853,20 +854,16 @@ BREWERY
 # Jibri tweaks for /etc/jitsi/meet/$DOMAIN-config.js
 sed -i "s|conference.$DOMAIN|internal.auth.$DOMAIN|" "$MEET_CONF"
 
-#Enable recording by default.
-sed -i "s|// recordingService:|recordingService:|" "$MEET_CONF"
-sed -i "/recordingService/,/hideStorageWarning/s|//     enabled: false,|    enabled: true,|" "$MEET_CONF"
-sed -i "/hideStorageWarning: false/,/}/s|// },|},|" "$MEET_CONF"
+#Enable recording & livestreaming by default.
+echo "> Patching config.js to enable recording and livestreaming by default..."
+echo "  Read more about patches at the patches folder."
+envsubst < \
+  patches/jitsi-meet/001-jitsi-meet-enable-livestreaming-and-recording.patch | \
+  patch --no-backup-if-mismatch -d / -p1
+
 #Prepare hidden domain for jibri/jigasi silent users.
 sed -i "/fileRecordingsServiceEnabled: false,/a \\
     hiddenDomain: \'recorder.$DOMAIN\'," "$MEET_CONF"
-
-#Enable livestreaming by default.
-sed -i "s|// liveStreaming:|liveStreaming:|" "$MEET_CONF"
-sed -i "/liveStreaming:/,/helpLink:/s|//     enabled: false,|    enabled: true,|" "$MEET_CONF"
-sed -i "s|//    helpLink:|   helpLink:|" "$MEET_CONF"
-sed -i "/helpLink:/,/}/s|// },|},|" "$MEET_CONF"
-
 # Recording directory
 if [ ! -d "$DIR_RECORD" ]; then
     mkdir "$DIR_RECORD"
@@ -1047,22 +1044,23 @@ fi
 sed -i "s|// startWithVideoMuted: false,|startWithVideoMuted: true,|" "$MEET_CONF"
 
 #Start with audio muted but admin
-sed -i "s|// startAudioMuted: 10,|startAudioMuted: 1,|" "$MEET_CONF"
+sed -i "s|// startAudioMuted: 10,|startAudioMuted: 2,|" "$MEET_CONF"
 
 #Disable/enable welcome page
-if [ "$ENABLE_WELCP" = "yes" ]; then
-    sed -i "/ welcomePage: {/,/},/s|// ||" "$MEET_CONF"
-    sed -i "/ welcomePage: {/,/},/s|disabled: .*,|disabled: true,|" "$MEET_CONF"
-elif [ "$ENABLE_WELCP" = "no" ]; then
-    sed -i "/ welcomePage: {/,/},/s|// ||" "$MEET_CONF"
-    sed -i "/ welcomePage: {/,/},/s|disabled: .*,|disabled: false,|" "$MEET_CONF"
-fi
+[ "$ENABLE_WELCP" = "yes" ] && ENABLE_WELCP_BOL=true
+[ "$ENABLE_WELCP" = "no" ] && ENABLE_WELCP_BOL=false
+export ENABLE_WELCP_BOL
+echo "> Patching config.js to modify welcompage behavior..."
+echo "  Read more about patches at the patches folder."
+envsubst < \
+  patches/jitsi-meet/002-jitsi-meet-welcome-page-on-off.patch | \
+  patch --no-backup-if-mismatch -d / -p1
+
 #Enable close page
-if [ "$ENABLE_CLOCP" = "yes" ]; then
-    sed -i "s|.*enableClosePage:.*|    enableClosePage: true,|" "$MEET_CONF"
-elif [ "$ENABLE_CLOCP" = "no" ]; then
-    sed -i "s|.*enableClosePage:.*|    enableClosePage: false,|" "$MEET_CONF"
-fi
+[ "$ENABLE_CLOCP" = "yes" ] && \
+    sed -i "s|// enableClosePage:.*|enableClosePage: true,|" "$MEET_CONF"
+[ "$ENABLE_CLOCP" = "no" ] && \
+    sed -i "s|// enableClosePage:.*|enableClosePage: false,|" "$MEET_CONF"
 
 #Add pre-join screen by default, since it improves YouTube autoplay capabilities
 #pre-join screen by itself don't require autorization by moderator, don't confuse with lobby which does.

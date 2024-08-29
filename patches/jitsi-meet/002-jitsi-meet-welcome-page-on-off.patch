@@ -1,0 +1,31 @@
+# Quick Jibri Installer - *buntu (LTS) based systems.
+# SwITNet Ltd © - 2024, https://switnet.net/
+# GPLv3 or later.
+
+Patch jitsi-meet config.js to enable/disable welcome page.
+
+diff --git a/etc/jitsi/meet/${DOMAIN}-config.js b/etc/jitsi/meet/${DOMAIN}-config.js
+index dcb860b..2094287 100644
+--- a/etc/jitsi/meet/${DOMAIN}-config.js
++++ b/etc/jitsi/meet/${DOMAIN}-config.js
+@@ -664,13 +664,13 @@ var config = {
+     // enableWelcomePage: true,
+ 
+     // Configs for welcome page.
+-    // welcomePage: {
+-    //     // Whether to disable welcome page. In case it's disabled a random room
+-    //     // will be joined when no room is specified.
+-    //     disabled: false,
+-    //     // If set, landing page will redirect to this URL.
+-    //     customUrl: ''
+-    // },
++    welcomePage: {
++        // Whether to disable welcome page. In case it's disabled a random room
++        // will be joined when no room is specified.
++        disabled: ${ENABLE_WELCP_BOL},
++        // If set, landing page will redirect to this URL.
++        customUrl: ''
++    },
+ 
+     // Configs for the lobby screen.
+     // lobby: {
