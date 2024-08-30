@@ -56,9 +56,8 @@ Check more details on our wiki.
 ### Jibri Recodings Access via Nextcloud
 * Valid domain with DNS record for Nextcloud SSL.
  
-### Jigasi Transcript (stalled)
-* SIP account
-* Google Cloud Account with Billing setup.
+### Jigasi Transcript
+* Enough disk space to run Vosk backend via docker container.
 
 
 
@@ -79,7 +78,7 @@ Feel free to use our `test-jibri-env.sh` tool to find some details on your curre
 * Etherpad via docker install
 * Authentication
   1. Local
-  2. JWT
+  2. JWT ([#87](https://forge.switnet.net/switnet/quick-jibri-installer/issues/87))
   3. None
 * Lobby Rooms
 * Conference Duration
@@ -90,7 +89,7 @@ Feel free to use our `test-jibri-env.sh` tool to find some details on your curre
 * Enabled Jitsi Electron app detection server side.
 * Standalone SSL Certbot/LE implementation
 * Improved recurring updater
-* Jigasi Transcript - Speech to Text powered by Google API (stalled)
+* Jigasi Transcript - vía Vosk speech recognition toolkit.
 
 ## Tools
 * Jibri Environment Tester
