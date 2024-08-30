@@ -27,17 +27,15 @@ echo ''
 
 exit_if_not_installed jitsi-meet
 
-export DOMAIN="$(find /etc/prosody/conf.d/ -name \*.lua|awk -F'.cfg' '!/localhost/{print $1}'|xargs basename)"
-export JIG_TRANSC_PASWD="$(tr -dc "a-zA-Z0-9#*=" < /dev/urandom | fold -w 16 | head -n1)"
-JIGASI_CONFIG="/etc/jitsi/jigasi/config"
-MEET_CONF="/etc/jitsi/meet/${DOMAIN}-config.js"
-JIG_SIP_CONF="/etc/jitsi/jigasi/config"
+DOMAIN="$(find /etc/prosody/conf.d/ -name \*.lua|awk -F'.cfg' '!/localhost/{print $1}'|xargs basename)"
+JIG_TRANSC_PASWD="$(tr -dc "a-zA-Z0-9#*=" < /dev/urandom | fold -w 16 | head -n1)"
 JIG_SIP_PROP="/etc/jitsi/jigasi/sip-communicator.properties"
-#JIG_TRANSC_PASWD_B64="$(echo -n "$JIG_TRANSC_PASWD" | base64)"
+export DOMAIN
+export JIG_TRANSC_PASWD
 
 apt-get -q2 update
 
-# Disbale 
+# Disable SIP account prompt by default
 echo "jigasi	jigasi/sip-account	string	''" | debconf-set-selections
 echo "jigasi	jigasi/sip-password	password	''" | debconf-set-selections
 
@@ -54,7 +52,7 @@ echo "6) Japanese"
 echo "7) Russian"
 echo "8) Spanish"
 
-read -p "Enter the number corresponding to your language choice: " lang_choice
+read -p "Enter the number corresponding to your language choice: " -r lang_choice
 
 case $lang_choice in
     1)
@@ -95,20 +93,22 @@ case $lang_choice in
 esac
 
 # Running selected VOSK docker model.
-docker run -d -p 2700:2700 ${VOSK_DOCKER_MODEL}:latest
+docker run -d --restart always -p 2700:2700 ${VOSK_DOCKER_MODEL}:latest
 
 echo "Setting up Jigasi transcript with current platform..."
 
 # Jitsi Meet
 echo "> Patching Jitsi Meet's config.js for Transcription support."
-echo "  Read more at patches/jigasi/jigasi-meet-config.patch file"
-envsubst < patches/jigasi/jigasi-meet-config.patch | patch --no-backup-if-mismatch -d / -p1
+echo "  Read more at patches/jigasi/001-jigasi-meet-config.patch file"
+envsubst < patches/jigasi/001-jigasi-meet-config.patch | \
+  patch --no-backup-if-mismatch -d / -p1
 
 # Jigasi
 echo "> Patching jigasi's sip-communicator.properties configuration."
-echo "  Read more at patches/jigasi/jigasi-sip-properties.patch file"
+echo "  Read more at patches/jigasi/002-jigasi-sip-properties.patch file"
 cp "$JIG_SIP_PROP" ${JIG_SIP_PROP}-dpkg-file
-envsubst < patches/jigasi/jigasi-sip-properties.patch | patch --no-backup-if-mismatch -d / -p1
+envsubst < patches/jigasi/002-jigasi-sip-properties.patch | \
+  patch --no-backup-if-mismatch -d / -p1
 
 # Create transcribe user on hidden domain.
 prosodyctl register transcriber recorder."$DOMAIN" "$JIG_TRANSC_PASWD"

@@ -8,7 +8,7 @@ diff --git a/etc/jitsi/meet/${DOMAIN}-config.js b/etc/jitsi/meet/${DOMAIN}-confi
 index f412891..f704157 100644
 --- a/etc/jitsi/meet/${DOMAIN}-config.js
 +++ b/etc/jitsi/meet/${DOMAIN}-config.js
-@@ -407,9 +407,9 @@ var config = {
+@@ -426,9 +426,9 @@ var config = {
      // autoCaptionOnRecord: false,
  
      // Transcription options.
@@ -20,7 +20,7 @@ index f412891..f704157 100644
  
      //     // Translation languages.
      //     // Available languages can be found in
-@@ -424,7 +424,7 @@ var config = {
+@@ -443,7 +443,7 @@ var config = {
      //     // detected based on the environment, e.g. if the app is opened in a chrome instance which
      //     // is using french as its default language then transcriptions for that participant will be in french.
      //     // Defaults to true.
@@ -29,7 +29,7 @@ index f412891..f704157 100644
  
      //     // Transcriber language. This settings will only work if "useAppLanguage"
      //     // is explicitly set to false.
-@@ -434,7 +434,7 @@ var config = {
+@@ -453,7 +453,7 @@ var config = {
  
      //     // Enables automatic turning on transcribing when recording is started
      //     autoTranscribeOnRecord: false,
