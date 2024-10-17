@@ -189,7 +189,8 @@ fi
 
     printf "\nOS: %s" "$(lsb_release -sd)"
 if [ "$DIST" = "focal" ] || \
-   [ "$DIST" = "jammy" ]; then
+   [ "$DIST" = "jammy" ] || \
+   [ "$DIST" = "noble" ]; then
     printf "\nGood, this is a supported platform!"
 else
     printf "\nSorry, this platform is not supported... exiting"
@@ -687,18 +688,6 @@ if [ "$JIBRI_RES" = "1080" ]; then
     JIBRI_RES_XORG_CONF="1920 1080"
 fi
 
-#Jibri Records Access (JRA) via Nextcloud
-while [ "$ENABLE_NC_ACCESS" != "yes" ] && [ "$ENABLE_NC_ACCESS" != "no" ]
-do
-    read -p "> Do you want to setup Jibri Records Access via Nextcloud: (yes or no)
-( Please check requirements at: https://forge.switnet.net/switnet/quick-jibri-installer )$NL" -r ENABLE_NC_ACCESS
-    if [ "$ENABLE_NC_ACCESS" = "no" ]; then
-        printf " - JRA via Nextcloud won't be enabled.\n\n"
-    elif [ "$ENABLE_NC_ACCESS" = "yes" ]; then
-        printf " - JRA via Nextcloud will be enabled.\n\n"
-    fi
-done
-sleep .1
 ##Jigasi
 while [ "$ENABLE_TRANSCRIPT" != "yes" ] && [ "$ENABLE_TRANSCRIPT" != "no" ]
 do
@@ -711,40 +700,7 @@ do
     fi
 done
 sleep .1
-#Grafana
-while [ "$ENABLE_GRAFANA_DSH" != "yes" ] && [ "$ENABLE_GRAFANA_DSH" != "no" ]
-do
-read -p "> Do you want to setup Grafana Dashboard: (yes or no)
-( Please check requirements at: https://forge.switnet.net/switnet/quick-jibri-installer )$NL" -r ENABLE_GRAFANA_DSH
-if [ "$ENABLE_GRAFANA_DSH" = "no" ]; then
-    printf " - Grafana Dashboard won't be enabled.\n\n"
-elif [ "$ENABLE_GRAFANA_DSH" = "yes" ]; then
-    printf " - Grafana Dashboard will be enabled.\n\n"
-fi
-done
-sleep .1
-#Docker Etherpad
-while [ "$ENABLE_DOCKERPAD" != "yes" ] && [ "$ENABLE_DOCKERPAD" != "no" ]
-do
-read -p "> Do you want to setup Docker Etherpad: (yes or no)$NL" -r ENABLE_DOCKERPAD
-if [ "$ENABLE_DOCKERPAD" = "no" ]; then
-    printf " - Docker Etherpad won't be enabled.\n\n"
-elif [ "$ENABLE_DOCKERPAD" = "yes" ]; then
-    printf " - Docker Etherpad will be enabled.\n\n"
-fi
-done
-sleep .1
-#Excalidraw Whiteboard
-while [ "$ENABLE_WHITEBOARD" != "yes" ] && [ "$ENABLE_WHITEBOARD" != "no" ]
-do
-read -p "> Do you want to setup Excalidraw Whiteboard backend: (yes or no)$NL" -r ENABLE_WHITEBOARD
-if [ "$ENABLE_WHITEBOARD" = "no" ]; then
-    printf " - Excalidraw Whiteboard won't be enabled.\n\n"
-elif [ "$ENABLE_WHITEBOARD" = "yes" ]; then
-    printf " - Excalidraw Whiteboard will be enabled.\n\n"
-fi
-done
-sleep .1
+
 #Start configuration
 echo '
 ########################################################################
@@ -1152,15 +1108,6 @@ else
     printf " please report to:"
     printf "    -> https://forge.switnet.net/switnet/quick-jibri-installer/issues"
 fi
-#JRA via Nextcloud
-if [ "$ENABLE_NC_ACCESS" = "yes" ]; then
-    printf "\nJRA via Nextcloud will be enabled."
-    if [ "$MODE" = "debug" ]; then
-        bash "$PWD"/jra_nextcloud.sh -m debug
-    else
-        bash "$PWD"/jra_nextcloud.sh
-    fi
-fi
 sleep .1
 #Jigasi w/VOSK backend.
 if [ "$ENABLE_TRANSCRIPT" = "yes" ]; then
@@ -1169,36 +1116,6 @@ if [ "$ENABLE_TRANSCRIPT" = "yes" ]; then
         bash "$PWD"/jigasi-vosk-backend.sh -m debug
     else
         bash "$PWD"/jigasi-vosk-backend.sh
-    fi
-fi
-sleep .1
-#Grafana Dashboard
-if [ "$ENABLE_GRAFANA_DSH" = "yes" ]; then
-    printf "\nGrafana Dashboard will be enabled."
-    if [ "$MODE" = "debug" ]; then
-        bash "$PWD"/grafana.sh -m debug
-    else
-        bash "$PWD"/grafana.sh
-    fi
-fi
-sleep .1
-#Docker Etherpad
-if [ "$ENABLE_DOCKERPAD" = "yes" ]; then
-    printf "\nDocker Etherpad will be enabled."
-    if [ "$MODE" = "debug" ]; then
-        bash "$PWD"/etherpad-docker.sh -m debug
-    else
-        bash "$PWD"/etherpad-docker.sh
-    fi
-fi
-sleep .1
-#Excalidraw Whiteboard
-if [ "$ENABLE_WHITEBOARD" = "yes" ]; then
-    printf "\nExcalidraw Whiteboard will be enabled."
-    if [ "$MODE" = "debug" ]; then
-        bash "$PWD"/excalidraw-backend.sh -m debug
-    else
-        bash "$PWD"/excalidraw-backend.sh
     fi
 fi
 sleep .1
